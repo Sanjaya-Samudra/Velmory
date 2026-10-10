@@ -1,0 +1,33 @@
+import {test,expect} from '@playwright/test';
+
+test('settings scenes fill the desktop space and deletion uses an in-app dialog',async({page})=>{
+ await page.goto('/auth/login');
+ await page.getByRole('button',{name:'Open a private vault on this device'}).click();
+ await page.getByLabel('Vault passphrase',{exact:true}).fill('settings atmosphere test phrase');
+ await page.getByLabel('Confirm passphrase').fill('settings atmosphere test phrase');
+ await page.getByRole('button',{name:'Create my private vault'}).click();
+ await page.getByRole('checkbox').check();
+ await page.getByRole('button',{name:'Enter my library'}).click();
+ await page.getByRole('link',{name:'Privacy & settings',exact:true}).click();
+ await page.setViewportSize({width:1440,height:900});
+ const vault=page.locator('.settings-illustration-vault');
+ await expect(vault).toBeVisible();
+ await page.screenshot({path:'test-results/settings-vault-1440.png'});
+ const card=await page.getByRole('heading',{name:'Your private vault'}).boundingBox();
+ const scene=await vault.boundingBox();
+ expect(scene!.x).toBeGreaterThan(card!.x+card!.width);
+ await page.getByRole('button',{name:'Storage',exact:true}).click();
+ await expect(page.locator('.settings-illustration-storage')).toBeVisible();
+ await page.getByRole('button',{name:'Account',exact:true}).click();
+ await expect(page.locator('.settings-illustration-account')).toBeVisible();
+ await page.getByRole('textbox',{name:'Type DELETE to confirm'}).fill('DELETE');
+ await page.getByRole('button',{name:'Delete my device vault'}).click();
+ await expect(page.getByRole('dialog',{name:'Delete this device vault?'})).toBeVisible();
+ await page.getByRole('dialog',{name:'Delete this device vault?'}).getByRole('button',{name:'Keep my vault'}).click();
+ await expect(page.getByRole('dialog',{name:'Delete this device vault?'})).toHaveCount(0);
+ await page.setViewportSize({width:390,height:844});
+ await page.getByRole('button',{name:'Vault & keys',exact:true}).click();
+ await expect(page.locator('.settings-illustration-vault')).toBeVisible();
+ await page.screenshot({path:'test-results/settings-vault-390.png'});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();
+});
