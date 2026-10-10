@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env
+.env.local
+test-results/
+playwright-report/
+*.tsbuildinfo
+backups/
+*.log
+
+.env.*
+!.env.example
+.private/
+supabase/.temp/
+supabase/.branches/
+*.enc

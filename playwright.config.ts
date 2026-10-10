@@ -1,0 +1,2 @@
+import {defineConfig} from '@playwright/test';
+export default defineConfig({testDir:'./tests/browser',timeout:60000,workers:1,use:{baseURL:process.env.VELMORY_TEST_URL||'http://127.0.0.1:5181',channel:'chrome',headless:true,trace:'retain-on-failure',screenshot:'only-on-failure'},webServer:process.env.VELMORY_TEST_URL?undefined:{command:'node node_modules/vite/bin/vite.js --host 127.0.0.1 --port 5181',url:'http://127.0.0.1:5181',reuseExistingServer:false,timeout:60000}});
