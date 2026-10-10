@@ -1,0 +1,32 @@
+project_id = "velmory"
+[auth]
+site_url = "http://127.0.0.1:5173"
+additional_redirect_urls = ["http://127.0.0.1:5173/app", "http://127.0.0.1:5173/auth/reset"]
+minimum_password_length = 12
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
+[functions.letter-dispatch]
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+[functions.account-delete]
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+[functions.media]
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+[functions.maintenance]
+verify_jwt = false
+import_map = "./functions/deno.json"
+
+[functions.artwork]
+verify_jwt = false
+import_map = "./functions/deno.json"
