@@ -1,0 +1,5 @@
+import {decrypt,encrypt,pagePasswordKey,wipe} from './crypto';
+import type {DiaryPage,PageSeal} from './types';
+export async function protectPage(page:DiaryPage,key:Uint8Array,params:Omit<PageSeal,'v'|'payload'>):Promise<DiaryPage>{const {seal:_,...content}=page;return {id:page.id,date:'',title:'Sealed page',objects:[],bookmark:false,tags:'',place:'',people:'',seal:{v:1,...params,payload:await encrypt(content,key,'velmory:page:'+page.id)}}}
+export async function sealPage(page:DiaryPage,password:string){const derived=await pagePasswordKey(password);try{return await protectPage(page,derived.key,derived.params)}finally{await wipe(derived.key)}}
+export async function unlockPage(page:DiaryPage,password:string){if(!page.seal||page.seal.v!==1)throw new Error('Unsupported page seal.');const {key,params}=await pagePasswordKey(password,page.seal);try{const content=await decrypt<DiaryPage>(page.seal.payload,key,'velmory:page:'+page.id);if(content.id!==page.id||!Array.isArray(content.objects))throw new Error('Invalid sealed page.');return {page:content,key,params}}catch(e){await wipe(key);throw e}}

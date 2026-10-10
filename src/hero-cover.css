@@ -1,0 +1,42 @@
+/* The lettering is positioned against the actual leather cover, above its clasp. */
+.hero-book {
+  container-type: inline-size;
+}
+
+.hero-book .book-emboss {
+  left: 35%;
+  top: 18.5%;
+  width: 32%;
+  height: auto;
+  gap: 0;
+  transform: rotate(5deg) skewX(-5deg);
+  transform-origin: 50% 10%;
+  color: #c7a975;
+  text-align: center;
+  text-shadow: 0 1px 1px #f6d59c55, 0 -1px 2px #0009;
+}
+
+.hero-book .book-cover-logo {
+  width: 13cqw;
+  height: auto;
+  margin: 0 auto 1.4cqw;
+  opacity: .8;
+  filter: sepia(.35) saturate(.7) brightness(.88) drop-shadow(0 1px 1px #0008);
+}
+
+.hero-book .book-cover-title {
+  display: block;
+  font-size: 4.1cqw;
+  line-height: 1;
+  letter-spacing: .1em;
+  white-space: nowrap;
+}
+
+.hero-book .book-emboss small {
+  display: block;
+  margin-top: 1.6cqw;
+  font-size: 1cqw;
+  line-height: 1;
+  letter-spacing: .14em;
+  white-space: nowrap;
+}

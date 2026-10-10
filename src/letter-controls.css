@@ -1,0 +1,57 @@
+.letter-room .letter-filters {
+  grid-template-columns: minmax(0, 1.4fr) repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+.letter-room .letter-filters > label {
+  grid-column: auto;
+  min-width: 0;
+  gap: 0;
+}
+
+.letter-room .letter-filters > .vel-select {
+  grid-column: auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.letter-room .letter-filters input,
+.letter-room .letter-filters .select-trigger {
+  width: 100%;
+  height: 44px;
+  min-height: 44px;
+}
+
+.letter-room .letter-filters > label {
+  line-height: 15px;
+}
+
+.letter-room .letter-filters > label input {
+  margin-top: 8px;
+}
+
+.letter-room .letter-filters .control-label {
+  display: block;
+  height: 15px;
+  margin: 0 0 8px;
+  line-height: 15px;
+}
+
+.letter-actions .letter-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #d8a892;
+}
+
+.letter-actions .letter-delete:hover { color: #f4c3ad; }
+
+@media (max-width: 899px) {
+  .letter-room .letter-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .letter-room .letter-filters > label { grid-column: 1 / -1; }
+}
+
+@media (max-width: 599px) {
+  .letter-room .letter-filters { grid-template-columns: minmax(0, 1fr); }
+  .letter-room .letter-filters > label { grid-column: auto; }
+}
