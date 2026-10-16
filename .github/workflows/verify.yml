@@ -2,6 +2,11 @@ name: Verify Velmory
 on:
   push:
   pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -13,7 +18,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
       - run: npm run verify
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - run: npm run test:offline
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-failure-evidence
+          path: test-results/
+          retention-days: 7

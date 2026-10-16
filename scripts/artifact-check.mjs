@@ -1,0 +1,21 @@
+import {readdir,readFile,stat} from 'node:fs/promises';
+import {join} from 'node:path';
+
+const root=new URL('../dist/',import.meta.url);
+const required=['index.html','sw.js','_headers','_redirects','manifest.webmanifest','robots.txt'];
+for(const file of required)await stat(new URL(file,root)).catch(()=>{throw new Error(`Production artifact missing: ${file}`)});
+const headers=await readFile(new URL('_headers',root),'utf8');
+for(const directive of ['Strict-Transport-Security','Content-Security-Policy','Cross-Origin-Opener-Policy','X-Content-Type-Options','Referrer-Policy','Permissions-Policy'])if(!headers.includes(directive))throw new Error(`Security header missing: ${directive}`);
+const redirects=await readFile(new URL('_redirects',root),'utf8');
+if(!redirects.includes('/* /index.html 200'))throw new Error('Single-page application fallback is missing.');
+const html=await readFile(new URL('index.html',root),'utf8');
+if(/localhost|127\.0\.0\.1|service[_-]?role/i.test(html))throw new Error('Production HTML contains a development address or privileged key label.');
+const script=html.match(/<script[^>]+src="([^"]+\.js)"/)?.[1];
+if(!script)throw new Error('Production entry script was not found.');
+const entry=new URL(script.replace(/^\//,''),root),entrySize=(await stat(entry)).size;
+if(entrySize>600_000)throw new Error(`Initial JavaScript exceeds the 600 KB production budget (${entrySize} bytes).`);
+const files=await readdir(new URL('assets/',root));
+if(files.some(file=>file.endsWith('.map')))throw new Error('Source maps must not be publicly deployed.');
+const worker=await readFile(new URL('sw.js',root),'utf8'),installHandler=worker.slice(worker.indexOf("addEventListener('install'"),worker.indexOf("addEventListener('message'"));
+if(installHandler.includes('skipWaiting()'))throw new Error('The service worker must wait for user-approved activation.');
+console.log(`Production artifacts verified. Initial JavaScript: ${entrySize} bytes; ${files.length} asset files.`);

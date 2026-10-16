@@ -56,7 +56,7 @@ it('rejects oversized chunks and tampered ciphertext',async()=>{
  expect((await handle(h.request('commit','POST'))).status).toBe(409);expect(h.calls.some(c=>c.name==='commit_media')).toBe(false);
 });
 it('requires authentication and rejects foreign origins',async()=>{
- const h=harness(),handle=mediaHandler(h.runtime);h.setAuthenticated(false);expect((await handle(h.request('status'))).status).toBe(401);
+ const h=harness(),handle=mediaHandler(h.runtime);h.setAuthenticated(false);const denied=await handle(h.request('status'));expect(denied.status).toBe(401);expect(denied.headers.get('Cache-Control')).toBe('no-store');expect(denied.headers.get('Content-Security-Policy')).toBe("default-src 'none'");
  const response=await handle(new Request('https://local.example/functions/v1/media',{method:'OPTIONS',headers:{Origin:'https://evil.example'}}));expect(response.status).toBe(403);
 });
 it('releases letters even when email configuration is unavailable',async()=>{

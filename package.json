@@ -3,6 +3,8 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "engines": {"node": ">=22.12 <23", "npm": ">=10"},
+  "packageManager": "npm@11.6.2",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "tsc -b && vite build",
@@ -10,10 +12,11 @@
     "test": "vitest run",
     "test:e2e": "node scripts/browser-check.mjs",
     "check:backend": "tsc -p tsconfig.backend.json",
-    "verify": "npm run check:backend && npm test && npm run build",
+    "verify": "npm run check:backend && npm test && npm run build && npm run check:artifacts",
     "test:live": "vitest run --config vitest.live.config.ts",
     "postbuild": "node scripts/generate-service-worker.mjs",
     "test:offline": "node scripts/offline-check.mjs",
+    "check:artifacts": "node scripts/artifact-check.mjs",
     "check:release": "node scripts/release-check.mjs"
   },
   "dependencies": {

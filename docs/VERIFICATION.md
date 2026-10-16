@@ -7,6 +7,7 @@ Last updated: 16 October 2026.
 - `npm run check:backend`: passed.
 - `npm test`: 41 tests passed across seven files.
 - `npm run build`: passed. Large-chunk warnings remain visible and tracked.
+- `npm run check:artifacts`: passed; deployment files, security headers, source-map policy, service-worker activation and the 600 KB initial-entry budget were verified.
 - Browser journeys: all eight applicable live journeys passed sequentially.
 - `npm run test:offline`: the production shell opened after a cold offline launch.
 - `npm audit --omit=dev`: zero known production dependency vulnerabilities at review time.
@@ -22,6 +23,7 @@ Run browser and offline suites sequentially because Playwright uses the same `te
 - Recovery onboarding proves the generated recovery key.
 - Settings reports browser persistence plus real local/cloud quotas.
 - Page reorder, duplicate, delete, precise controls, notifications, update prompts, CI, and public metadata are implemented.
+- Unexpected render failures show a safe recovery screen, hosted client failures use fixed non-private event codes, and page eviction locks the in-memory vault key.
 
 ## Evidence required before public launch
 

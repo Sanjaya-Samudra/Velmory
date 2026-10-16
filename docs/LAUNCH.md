@@ -6,7 +6,7 @@ This repository is ready to connect to new provider accounts. No Supabase, Brevo
 
 1. Create a Supabase Free project, a Brevo Free account, and a Cloudflare Pages project under accounts you control. Google sign-in also needs OAuth credentials from a Google Cloud project. Use the provider dashboards; do not put secret keys in chat, source code, or a `VITE_` variable.
 2. Copy `.env.example` to ignored `.env.local`. Set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` using Supabase's public project values. Keep `VITE_EMAIL_AUTH_READY=false` until real delivery works.
-3. Set up Supabase using the ordered steps in [BACKEND.md](BACKEND.md): all nine migrations, five Edge Functions, private Storage policies, scheduler, Google OAuth, TOTP, and service secrets. Test against an empty disposable project before using the production project.
+3. Set up Supabase using the ordered steps in [BACKEND.md](BACKEND.md): all eleven migrations, five Edge Functions, private Storage policies, scheduler, Google OAuth, TOTP, and service secrets. Test against an empty disposable project before using the production project.
 4. Configure Brevo custom SMTP in Supabase Auth. Check actual confirmation and reset mail to at least two external addresses. The built-in Supabase SMTP is limited to team addresses and is not suitable for public signup.
 5. Confirm the sender address or domain required by the mail provider. If domain authentication is required, decide on a domain before opening email signup. Do not purchase one automatically.
 6. Deploy the frontend to Cloudflare Pages with build command `npm run build`, output directory `dist`, and the same public environment variables. Configure production and localhost redirect URLs in Supabase Auth. Cloudflare's `_redirects` and `_headers` files are included in `dist`.
@@ -19,6 +19,7 @@ This repository is ready to connect to new provider accounts. No Supabase, Brevo
 - Run an encrypted database and Storage backup, restore into an isolated project, unlock a test diary and media item, and record the result.
 - Rehearse a Cloudflare rollback. Check real production logs for private text, access tokens, recovery keys, and key envelopes.
 - Only after mail checks pass, enable `service_settings.email_signup_enabled` through trusted SQL, set `VITE_EMAIL_AUTH_READY=true`, rebuild, and redeploy.
+- Run `npm run check:release` with the three public `VITE_` values and the evidence flags `VELMORY_LIVE_TESTS_PASSED=yes` and `VELMORY_BACKUP_RESTORE_PASSED=yes`. This verifies public HTTPS endpoints, security headers, Auth health, PWA assets, and the recorded hosted-test gates.
 
 ## Free-plan boundaries
 

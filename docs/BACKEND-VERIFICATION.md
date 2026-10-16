@@ -4,7 +4,7 @@ Source: `E:\Sanjaya\MyProjects\Velmory\Project`
 
 ## Delivered
 
-- Nine ordered database migrations; owner isolation, explicit privileges, MFA administration, email-readiness and maintenance controls.
+- Eleven ordered database migrations; owner isolation, explicit privileges, MFA administration, email-readiness, page-level encrypted records, operational events and maintenance controls.
 - Private media reservations, combined quotas, resumable encrypted chunks, integrity checks, authenticated downloads and cleanup.
 - Cursor synchronization, idempotent revision saves, account-isolated browser records, safe conflict reconciliation and migration of existing local diaries.
 - Accepted contacts, sealed letters and separately encrypted attachments, server-enforced release/cancellation, retry-safe notifications and daily email budgets.
@@ -14,12 +14,14 @@ Source: `E:\Sanjaya\MyProjects\Velmory\Project`
 
 The frontend design was preserved. New media, attachment and collection APIs have not been wired into new frontend controls; that is the later frontend stage.
 
-## Verified locally on 7 October 2026
+## Verified locally on 17 October 2026
 
-- 35 automated tests passed across seven suites.
-- Both Chrome browser journeys passed, including encrypted writing, refresh/unlock, sign-out/reopen and responsive public pages.
+- 41 automated tests passed across seven suites.
+- Eight Chrome browser journeys passed, including encrypted writing, refresh/unlock, sign-out/reopen, book spreads, sealed pages, future letters, settings and responsive public pages.
+- The production app shell passed a cold offline launch.
 - Backend TypeScript checks passed.
-- Production frontend build passed; existing bundle-size warnings remain.
+- Production frontend build and artifact policy checks passed; large cryptography and editor chunks remain lazy-loaded.
+- The production dependency audit reported zero known runtime vulnerabilities at review time.
 - The opt-in live integration test type-checks.
 - A physical local PostgreSQL snapshot was restored and access isolation rechecked.
 
@@ -27,7 +29,7 @@ The frontend design was preserved. New media, attachment and collection APIs hav
 
 No hosted Supabase project, Google OAuth or Brevo credentials were configured. The Docker engine was unavailable. Native Deno checking hit a Windows sandbox dependency-cache path error; shared function code passed the TypeScript backend check and HTTP handler tests. Real Auth/Storage/Edge integration, actual email delivery, managed PostgreSQL plus object-storage restoration and deployment remain unverified.
 
-This is implemented and locally tested backend source, **not a claim of a completed live or production-ready service**.
+The repository is prepared for a production deployment. Provider configuration and the live checks below remain mandatory before public registration is enabled.
 
 ## Next activation steps
 

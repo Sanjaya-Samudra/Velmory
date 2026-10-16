@@ -53,6 +53,8 @@ See `docs/FRONTEND-REDESIGN.md` for the new screens and their controls. See `doc
 
 Run `npm run verify` for backend type checking, tests and a production build. CI runs browser and offline journeys sequentially. Full backend operations and restore procedures: `docs/BACKEND.md`. Browser protection limits are in `docs/THREAT-MODEL.md`.
 
+Production controls and the exact boundary between repository readiness and provider activation are recorded in `docs/PRODUCTION-READINESS.md`. The build now fails if required deployment artifacts, security headers, entry-size limits, or service-worker activation rules regress.
+
 ## Free-tier launch
 
 See `docs/LAUNCH.md` for provider account setup, the release gate, and hosted verification. `npm run test:offline` checks a cold offline launch of the production build. No provider accounts are configured in this checkout.
