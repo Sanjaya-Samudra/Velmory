@@ -1,24 +1,36 @@
-# Velmory — local handoff
+# Velmory verification record
 
-The working project is at `E:\Sanjaya\MyProjects\Velmory\Project`.
+Last updated: 16 October 2026.
 
-1. Open that folder and double-click **START-VELMORY.cmd**.
-2. Keep its terminal open. Visit **http://127.0.0.1:5173/**.
-3. Choose **Begin your story → Open a private vault on this device**.
-4. Set a vault passphrase, save the recovery key, and create your diary.
+## Automated evidence
 
-The interface includes the supplied candlelit artwork, animated homepage, public pages, bookshelf, encrypted diary editor, search/timeline, local letters, profile and export controls. Private device mode does not require a cloud account.
+- `npm run check:backend`: passed.
+- `npm test`: 41 tests passed across seven files.
+- `npm run build`: passed. Large-chunk warnings remain visible and tracked.
+- Browser journeys: all eight applicable live journeys passed sequentially.
+- `npm run test:offline`: the production shell opened after a cold offline launch.
+- `npm audit --omit=dev`: zero known production dependency vulnerabilities at review time.
 
-## Verification — 7 October 2026
+Run browser and offline suites sequentially because Playwright uses the same `test-results` directory.
 
-- Production TypeScript/Vite build passed.
-- Six Vitest tests passed: vault recovery and ciphertext integrity, recipient encryption, PostgreSQL ownership/revision policies, scheduled-letter access and administrator MFA authorization.
-- Two Chrome browser journeys passed: encrypted diary creation, writing, refresh/unlock, sign-out/reopen; public routes, 360/390/768/1024/1440px widths, and no serious/critical automated WCAG A/AA homepage findings.
-- Desktop/mobile screenshots were visually inspected.
-- Windows test-server teardown encountered a process-cleanup error after the browser tests passed; no application assertion failed.
+## Implemented hardening
 
-## Release status
+- Diary metadata and pages are independently encrypted. Legacy whole-diary records migrate automatically.
+- Rapid edits are coalesced before encryption; conflicts now occur per encrypted page record.
+- New audio uses authenticated binary chunks without base64 expansion. Hosted size limits use live remaining quota.
+- Page and diary deletion queue unreferenced audio for cloud removal.
+- Recovery onboarding proves the generated recovery key.
+- Settings reports browser persistence plus real local/cloud quotas.
+- Page reorder, duplicate, delete, precise controls, notifications, update prompts, CI, and public metadata are implemented.
 
-This is the first working local build. Hosted login, cross-device synchronization and email require Supabase/Brevo setup and live verification. The README documents remaining implementation: private media upload infrastructure, two-page editing, letter attachments, complete content/collection administration and cold offline loading. Backup restoration and public deployment remain unverified. The complete public-release plan is not yet finished.
+## Evidence required before public launch
 
-The implementation plan is also saved in `E:\Sanjaya\MyProjects\Velmory\Velmory_Implementation_Plan.pdf`.
+- Create Supabase, Brevo, and Cloudflare projects; apply migrations and deploy Edge Functions.
+- Run `npm run test:live` against a disposable project.
+- Verify signup, reset, Google OAuth, SPF/DKIM/DMARC, bounce handling, reminders, release, cancellation, and email outages.
+- Execute hosted database/private Storage backup and restore.
+- Test cross-account RLS, two real browsers editing one page, deletion, pause/resume, and rollback.
+- Complete manual WCAG 2.2 AA keyboard, screen-reader, zoom, contrast, target-size, and drag-alternative checks.
+- Obtain an independent security review before advertising audited security.
+
+Local checks do not prove provider configuration or lifelong availability.

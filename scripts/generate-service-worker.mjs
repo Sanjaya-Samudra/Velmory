@@ -17,8 +17,9 @@ const revision = (await readFile(join(root, 'index.html'), 'utf8')).match(/src="
 const source = `const CACHE = 'velmory-app-${revision}';
 const ASSETS = ${JSON.stringify(assets)};
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)));
 });
+self.addEventListener('message', event => { if (event.data === 'SKIP_WAITING') self.skipWaiting(); });
 self.addEventListener('activate', event => {
   event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('velmory-app-') && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });

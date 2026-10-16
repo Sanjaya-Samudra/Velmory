@@ -42,15 +42,16 @@ No remote account, deployment, domain, provider subscription, or charge was crea
 - Public pages, account forms, encrypted device vault, recovery-key unlocking, diary creation/archive/deletion, password-sealed pages, typed text, drawing, photo/audio insertion, spatial object controls, bookmarks, grouped and paginated memories, full-date search/filtering, chapter timeline, On This Day and Memory Time Machine, self letters, private profile, PDF export and encrypted archive export/import are implemented.
 - Backend migrations, private resumable media endpoints, quota enforcement, cursor synchronization, scheduled attachments, durable deletion, structured content administration and encrypted backup tooling are implemented. See `docs/BACKEND.md` for deployment and verification limits. Real Auth/SMTP/Storage/Edge integration still requires live service verification.
 - The editor shows a facing page on wide desktops and a single editable page on phones. It supports 48 stickers, typography/ink/alignment controls, rich text, duplication and layering. Curved 3D meshes and independently editing two pages simultaneously are not implemented.
-- Audio recordings up to 100 MiB use independently keyed encrypted media pieces and resumable cloud uploads. Photos still use optimized embedded images. The hosted quota is enforced against encrypted bytes; the default 20 MiB allowance cannot hold a 100 MiB recording. Audio stays local if a cloud upload fails and retries on synchronization.
+- Diary metadata and pages are independently encrypted and synchronized. Older whole-diary records migrate automatically after unlock, allowing page-level saves and conflicts.
+- New audio uses independently keyed authenticated binary pieces without base64 expansion. Device mode permits up to 100 MiB on desktop and 25 MiB on small screens; hosted uploads use the account's live remaining encrypted allowance. Audio stays local if an upload fails and retries on synchronization.
 - Letter composition supports up to ten separately encrypted attachments of 4 MiB each, with a retryable local copy when hosted delivery fails. Recipient identity fingerprints are not yet shown in the interface.
 - The admin UI handles accounts, quotas, jobs, auditing, structured page/cover/sticker/announcement drafts, artwork uploads, preview, publish, unpublish and rollback. Published page sections and announcements render on the public site. Published cover collections can be chosen during diary creation, and published sticker packs can be inserted into diary pages. The chosen artwork is embedded in the encrypted diary document.
-- The production build includes a web manifest and a static app-shell service worker. Cached routes reopen offline after an initial successful installation; private content remains encrypted in IndexedDB. The development server does not register the service worker.
+- The production build includes a web manifest and a static app-shell service worker. Cached routes reopen offline after installation, users receive an update prompt for a waiting worker, and private content remains encrypted in IndexedDB. The development server does not register it.
 - Private-vault cryptography has automated tests; the application has not had an independent security audit. Do not advertise audited security or guaranteed lifelong preservation.
 
 See `docs/FRONTEND-REDESIGN.md` for the new screens and their controls. See `docs/OPERATIONS.md`, `docs/ASSETS.md`, and the implementation-plan PDF in the parent folder.
 
-Run `npm run verify` for backend type checking, tests and a production build. Full backend operations and restore procedures: `docs/BACKEND.md`.
+Run `npm run verify` for backend type checking, tests and a production build. CI runs browser and offline journeys sequentially. Full backend operations and restore procedures: `docs/BACKEND.md`. Browser protection limits are in `docs/THREAT-MODEL.md`.
 
 ## Free-tier launch
 

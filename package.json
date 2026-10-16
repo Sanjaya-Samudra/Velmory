@@ -13,7 +13,8 @@
     "verify": "npm run check:backend && npm test && npm run build",
     "test:live": "vitest run --config vitest.live.config.ts",
     "postbuild": "node scripts/generate-service-worker.mjs",
-    "test:offline": "node scripts/offline-check.mjs"
+    "test:offline": "node scripts/offline-check.mjs",
+    "check:release": "node scripts/release-check.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",
