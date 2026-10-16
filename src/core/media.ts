@@ -1,7 +1,7 @@
 // Service adapter only: no visual changes to the existing editor.
 import {backend,checkError} from './backend';
 import {db} from './db';
-import {encrypt,decrypt} from './crypto';
+import {encrypt,decrypt,encryptBytes,decryptBytes} from './crypto';
 import type {CipherEnvelope} from './types';
 export interface MediaReference {id:string;owner:string;sha256:string;bytes:number}
 async function hash(bytes:Uint8Array){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes as Uint8Array<ArrayBuffer>))].map(n=>n.toString(16).padStart(2,'0')).join('')}
@@ -17,8 +17,10 @@ export async function stagePrivateMedia(owner:string,key:Uint8Array,content:{mim
  if(bytes.length>8388608)throw new Error('Encrypted media exceeds the 8 MiB limit.');const sha256=await hash(bytes);
  await db.uploads.put({owner,id,bytes,sha256,purpose,state:'pending'});return {id,owner,bytes:bytes.length,sha256};
 }
+export async function stagePrivateBytes(owner:string,key:Uint8Array,content:Uint8Array,purpose:'diary'|'letter'='diary'):Promise<MediaReference>{const id=crypto.randomUUID(),bytes=await encryptBytes(content,key,owner+':media:'+id);if(bytes.length>8388608)throw new Error('Encrypted media exceeds the 8 MiB limit.');const sha256=await hash(bytes);await db.uploads.put({owner,id,bytes,sha256,purpose,state:'pending'});return {id,owner,bytes:bytes.length,sha256}}
 export async function synchronizeMedia(owner:string,id:string){
  const local=await db.uploads.get([owner,id]);if(!local)throw new Error('Encrypted upload is not cached.');
+ if(local.state==='deleting'){if(backend&&navigator.onLine)await request('delete',{method:'DELETE'},id);await db.uploads.delete([owner,id]);return}
  await request('reserve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,bytes:local.bytes.length,sha256:local.sha256,purpose:local.purpose})});
  const status=await (await request('status',{},id)).json() as {state:string;chunks:{part:number;sha256:string}[]};
  if(status.state!=='ready'){
@@ -37,4 +39,6 @@ export async function readPrivateMedia<T>(reference:MediaReference,key:Uint8Arra
  if(local.sha256!==reference.sha256||await hash(local.bytes)!==reference.sha256)throw new Error('Cached media integrity check failed.');
  return decrypt<T>(JSON.parse(new TextDecoder().decode(local.bytes)) as CipherEnvelope,key,reference.owner+':media:'+reference.id);
 }
-export async function removePrivateMedia(owner:string,id:string){await request('delete',{method:'DELETE'},id);await db.uploads.delete([owner,id])}
+export async function readPrivateBytes(reference:MediaReference,key:Uint8Array){let local=await db.uploads.get([reference.owner,reference.id]);if(!local){const bytes=new Uint8Array(await (await request('download',{},reference.id)).arrayBuffer());if(await hash(bytes)!==reference.sha256||bytes.length!==reference.bytes)throw new Error('Media integrity check failed.');local={id:reference.id,owner:reference.owner,bytes,sha256:reference.sha256,purpose:'diary',state:'ready'};await db.uploads.put(local)}if(local.sha256!==reference.sha256||await hash(local.bytes)!==reference.sha256)throw new Error('Cached media integrity check failed.');return decryptBytes(local.bytes,key,reference.owner+':media:'+reference.id)}
+export async function queuePrivateMediaRemoval(owner:string,id:string){const local=await db.uploads.get([owner,id]);if(owner.startsWith('device:')){if(local)await db.uploads.delete([owner,id]);return}if(local)await db.uploads.update([owner,id],{state:'deleting'});else if(backend&&navigator.onLine)await request('delete',{method:'DELETE'},id)}
+export async function removePrivateMedia(owner:string,id:string){await queuePrivateMediaRemoval(owner,id);if(backend&&navigator.onLine)await synchronizeMedia(owner,id)}

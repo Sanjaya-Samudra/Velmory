@@ -1,6 +1,6 @@
 import Dexie,{type EntityTable,type Table} from 'dexie';
 import type {EncryptedRecord,VaultEnvelope} from './types';
-export interface UploadRecord {owner:string;id:string;bytes:Uint8Array;sha256:string;purpose:'diary'|'letter';state:'pending'|'ready'}
+export interface UploadRecord {owner:string;id:string;bytes:Uint8Array;sha256:string;purpose:'diary'|'letter';state:'pending'|'ready'|'deleting'}
 export function createDatabase(name='velmory-private-v1'){const db=new Dexie(name) as Dexie & {
  vaults:EntityTable<{owner:string;envelope:VaultEnvelope;revision?:number},'owner'>;
  records:Table<EncryptedRecord,[string,string]>;

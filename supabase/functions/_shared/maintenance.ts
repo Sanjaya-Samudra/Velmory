@@ -33,6 +33,7 @@ export function maintenanceHandler(runtime:Runtime){return endpoint(runtime,asyn
  const roots=checked(await admin.storage.from(PRIVATE_BUCKET).list('',{limit:100,sortBy:{column:'name',order:'asc'}}))??[];
  for(const root of roots){if(!/^[0-9a-f-]{36}$/.test(root.name))continue;const profile=checked(await admin.from('profiles').select('id').eq('id',root.name).maybeSingle());if(!profile)await removePrefix(admin,root.name)}
  checked(await admin.from('rate_windows').delete().lt('day',new Date(Date.now()-7*86400000).toISOString().slice(0,10)));
+ checked(await admin.from('operational_events').delete().lt('created_at',new Date(Date.now()-30*86400000).toISOString()));
  checked(await admin.from('service_health').upsert({name:'maintenance',last_run:new Date().toISOString(),status:'ok',code:null}));
  return Response.json({media_removed:removed,accounts_deleted:accounts});
 })}

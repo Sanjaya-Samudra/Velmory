@@ -33,3 +33,4 @@ export async function receiveDelivery(id:string,vaultKey:Uint8Array){const data=
 export async function readLetterAttachment(attachment:LetterAttachment){const key=await decodeKey(attachment.key);try{return await readPrivateMedia<{mime:string;data:string}>(attachment.reference,key)}finally{await wipe(key)}}
 export const serviceUsage=()=>rpc<{used_bytes:number;quota_bytes:number;warning:boolean}>('storage_usage');
 export const markNotificationRead=(id:string)=>rpc('mark_notification_read',{p_id:id});
+export const reportOperationalEvent=(area:'sync'|'media'|'archive'|'ui',code:string,duration?:number)=>rpc('report_operational_event',{p_area:area,p_code:code,p_duration:duration??null});

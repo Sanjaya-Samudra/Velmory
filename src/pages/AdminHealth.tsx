@@ -8,6 +8,7 @@ export interface ServiceHealth {
  exhausted_jobs:number;
  overdue_jobs:number;
  deletions_pending:number;
+ client_failures_24h:number;
  health:{name:string;last_run:string;status:'ok'|'error';code?:string}[];
  accounts:{id:string;used_bytes:number;quota_bytes:number;near_quota:boolean}[];
 }
@@ -38,14 +39,16 @@ export default function AdminHealth({data,onChange}:{data:ServiceHealth;onChange
    <span><b>{remaining}</b> Email attempts remaining today</span>
    <span><b>{near}</b> Accounts nearing quota</span>
    <span><b>{data.overdue_jobs}</b> Overdue jobs</span>
+   <span><b>{data.client_failures_24h}</b> Client failures in 24h</span>
   </div>
-  {(remaining<20||near>0||data.overdue_jobs>0||data.exhausted_jobs>0||data.deletions_pending>0)&&
+  {(remaining<20||near>0||data.overdue_jobs>0||data.exhausted_jobs>0||data.deletions_pending>0||data.client_failures_24h>0)&&
    <Message error>{[
     remaining<20&&'Email budget is nearly exhausted.',
     near>0&&`${near} account(s) near storage allowance.`,
     data.overdue_jobs>0&&`${data.overdue_jobs} notification job(s) overdue.`,
     data.exhausted_jobs>0&&`${data.exhausted_jobs} job(s) exhausted retries.`,
     data.deletions_pending>0&&`${data.deletions_pending} account deletion(s) pending.`,
+    data.client_failures_24h>0&&`${data.client_failures_24h} redacted client failure(s) in the last 24 hours.`,
    ].filter(Boolean).join(' ')}</Message>}
   {data.health.map(item=><p key={item.name} className="muted">
    {item.name}: {item.status} · last run {new Date(item.last_run).toLocaleString()}
