@@ -6,8 +6,8 @@ test('letter filters align and a revoked letter can be deleted',async({page})=>{
  await page.getByLabel('Vault passphrase',{exact:true}).fill('letter deletion test phrase');
  await page.getByLabel('Confirm passphrase').fill('letter deletion test phrase');
  await page.getByRole('button',{name:'Create my private vault'}).click();
- await page.getByRole('checkbox').check();
- await page.getByRole('button',{name:'Enter my library'}).click();
+ await page.getByLabel('Confirm your recovery key').fill((await page.locator('.recovery-key').innerText()).replaceAll(' ',''));await page.getByRole('checkbox').check();
+ await page.getByRole('button',{name:/enter my library/i}).click();
  await page.getByRole('link',{name:'Future letters',exact:true}).click();
  for(const width of [1024,1440]){
   await page.setViewportSize({width,height:900});

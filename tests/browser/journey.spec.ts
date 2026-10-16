@@ -9,7 +9,7 @@ test('private device diary survives reload and stays encrypted',async({page})=>{
  await page.getByLabel('Confirm passphrase').fill('a private test phrase 2026');
  await page.getByRole('button',{name:'Create my private vault'}).click();
  await expect(page.getByRole('heading',{name:'Keep the key.'})).toBeVisible({timeout:30000});
- await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Enter my library'}).click();
+ await page.getByLabel('Confirm your recovery key').fill((await page.locator('.recovery-key').innerText()).replaceAll(' ',''));await page.getByRole('checkbox').check();await page.getByRole('button',{name:/enter my library/i}).click();
  await page.getByRole('button',{name:'New diary',exact:true}).click();
  await page.getByLabel('Diary name').fill('Private test memories');await page.getByRole('button',{name:'Create my diary'}).click();
  await page.getByLabel('Memory title',{exact:true}).fill('Secret sunset story');
@@ -28,4 +28,4 @@ test('private device diary survives reload and stays encrypted',async({page})=>{
  await expect(page.getByText('Private test memories',{exact:true})).toBeVisible();
  expect(errors).toEqual([]);
 });
-test('public routes fit desktop and mobile, and homepage is accessible',async({page})=>{await page.emulateMedia({reducedMotion:'reduce'});for(const width of [360,390,768,1024,1440]){await page.setViewportSize({width,height:900});await page.goto('/');await expect(page.getByRole('heading',{name:/Your life/})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();await page.evaluate(()=>document.fonts.ready);if(width===390||width===1440)await page.screenshot({path:`test-results/home-${width}.png`,fullPage:true})}const scan=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze();expect(scan.violations.filter(v=>v.impact==='critical'||v.impact==='serious')).toEqual([]);for(const route of ['/product','/features','/experience','/privacy']){await page.goto(route);await expect(page.locator('h1')).toBeVisible()}});
+test('public routes fit desktop and mobile, and homepage is accessible',async({page})=>{await page.emulateMedia({reducedMotion:'reduce'});for(const width of [360,390,768,1024,1440]){await page.setViewportSize({width,height:900});await page.goto('/');await expect(page.getByRole('heading',{name:/Your life/})).toBeVisible();expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBeTruthy();await page.evaluate(()=>document.fonts.ready);if(width===390||width===1440)await page.screenshot({path:`test-results/home-${width}.png`,fullPage:true})}const scan=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze();expect(scan.violations.filter(v=>v.impact==='critical'||v.impact==='serious')).toEqual([]);for(const route of ['/product','/features','/experience','/privacy','/terms']){await page.goto(route);await expect(page.locator('h1')).toBeVisible()}});

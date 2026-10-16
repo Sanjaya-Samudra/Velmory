@@ -6,7 +6,7 @@ test('large collections stay bounded and the book controls remain separate',asyn
  await page.setViewportSize({width:1440,height:900});await page.emulateMedia({reducedMotion:'reduce'});await page.goto('/auth/login');
  await page.getByRole('button',{name:'Open a private vault on this device'}).click();
  await page.getByLabel('Vault passphrase',{exact:true}).fill('a reading room test phrase');await page.getByLabel('Confirm passphrase').fill('a reading room test phrase');
- await page.getByRole('button',{name:'Create my private vault'}).click();await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Enter my library'}).click();
+ await page.getByRole('button',{name:'Create my private vault'}).click();await page.getByLabel('Confirm your recovery key').fill((await page.locator('.recovery-key').innerText()).replaceAll(' ',''));await page.getByRole('checkbox').check();await page.getByRole('button',{name:/enter my library/i}).click();
  // Synthetic memories live only in this browser test's isolated vault.
  await page.evaluate(async()=>{
   const dbPath='/src/core/db.ts',cryptoPath='/src/core/crypto.ts',repoPath='/src/core/repository.ts',typesPath='/src/core/types.ts';

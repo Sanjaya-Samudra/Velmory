@@ -7,8 +7,8 @@ test('a local letter encrypts and restores an attachment',async({page})=>{
  await page.getByLabel('Vault passphrase',{exact:true}).fill('letter attachment test phrase');
  await page.getByLabel('Confirm passphrase').fill('letter attachment test phrase');
  await page.getByRole('button',{name:'Create my private vault'}).click();
- await page.getByRole('checkbox').check();
- await page.getByRole('button',{name:'Enter my library'}).click();
+ await page.getByLabel('Confirm your recovery key').fill((await page.locator('.recovery-key').innerText()).replaceAll(' ',''));await page.getByRole('checkbox').check();
+ await page.getByRole('button',{name:/enter my library/i}).click();
  await page.getByRole('link',{name:'Future letters',exact:true}).click();
  await page.getByRole('button',{name:'Write a future letter'}).click();
  await page.getByLabel('Title',{exact:true}).fill('A letter with a keepsake');
