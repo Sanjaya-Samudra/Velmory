@@ -68,3 +68,51 @@ it('disables private operations during durable account deletion',async()=>{
 it('restores records and access policies from a local database backup',async()=>{
  await login(db,alice);await db.query('select public.save_document($1,0,$2,false)',['diary:restore',cipher]);await db.exec('reset role');const archive=await db.dumpDataDir();const restored=new PGlite({loadDataDir:archive});try{await login(restored,alice);expect((await restored.query('select * from public.documents')).rows).toHaveLength(1);await login(restored,bob);expect((await restored.query('select * from public.documents')).rows).toHaveLength(0)}finally{await restored.close()}
 },30000);
+it('secures collaborative shared diaries with member-only access and revision tracking',async()=>{
+ await contacts(db);
+ await login(db,alice);
+ const diaryId=(await db.query<any>('select public.create_shared_diary($1,$2,$3,$4,$5,$6)',['Our Love Story','rose','W'.repeat(80),publicKey(alice),'2024-02-14','Anniversary'])).rows[0].create_shared_diary;
+ expect(diaryId).toBeDefined();
+
+ // Alice invites Bob (accepted contact)
+ await db.query('select public.invite_shared_member($1,$2,$3,$4)',[diaryId,bob,'W'.repeat(80),publicKey(bob)]);
+
+ // Alice cannot invite Carol (not an accepted contact)
+ await expect(db.query('select public.invite_shared_member($1,$2,$3,$4)',[diaryId,carol,'W'.repeat(80),publicKey(carol)])).rejects.toThrow('accepted contact');
+
+ // Carol cannot view or list Alice's shared diary
+ await login(db,carol);
+ const carolDiaries=(await db.query<any>('select public.list_shared_diaries()')).rows[0].list_shared_diaries;
+ expect(carolDiaries.some((d:any)=>d.id===diaryId)).toBe(false);
+ await expect(db.query('select public.save_shared_page($1,$2,0,$3,false)',[diaryId,'page-1',cipher])).rejects.toThrow('Not a member');
+
+ // Bob sees pending invitation and accepts
+ await login(db,bob);
+ const bobDiaries=(await db.query<any>('select public.list_shared_diaries()')).rows[0].list_shared_diaries;
+ const invite=bobDiaries.find((d:any)=>d.id===diaryId);
+ expect(invite).toMatchObject({title:'Our Love Story',status:'pending',my_role:'editor'});
+ await db.query('select public.accept_shared_invite($1)',[diaryId]);
+
+ // Bob saves a collaborative page
+ const rev=(await db.query<any>('select public.save_shared_page($1,$2,0,$3,false)',[diaryId,'page-1',cipher])).rows[0].save_shared_page;
+ expect(Number(rev)).toBe(1);
+
+ // Alice syncs and retrieves the shared page
+ await login(db,alice);
+ const pages=(await db.query<any>('select public.fetch_shared_pages($1,0,10)',[diaryId])).rows[0].fetch_shared_pages;
+ expect(pages.pages).toHaveLength(1);
+ expect(pages.pages[0]).toMatchObject({page_id:'page-1',author_id:bob,revision:1});
+
+ // Stale concurrent write by Alice with differing ciphertext is rejected with revision conflict
+ await expect(db.query('select public.save_shared_page($1,$2,0,$3,false)',[diaryId,'page-1',{...cipher,ciphertext:'Z'.repeat(64)}])).rejects.toThrow('revision_conflict');
+
+ // Updating milestone
+ await db.query('select public.update_shared_diary_milestone($1,$2,$3)',[diaryId,'2024-02-14','Two years together']);
+ const updatedList=(await db.query<any>('select public.list_shared_diaries()')).rows[0].list_shared_diaries;
+ expect(updatedList.find((d:any)=>d.id===diaryId).milestone_label).toBe('Two years together');
+
+ // Alice deletes the shared diary, cleanly removing it for all members
+ await db.query('select public.delete_shared_diary($1)',[diaryId]);
+ expect((await db.query('select id from public.shared_diaries where id=$1',[diaryId])).rows).toHaveLength(0);
+ expect((await db.query('select id from public.shared_diary_pages where diary_id=$1',[diaryId])).rows).toHaveLength(0);
+});
