@@ -17,6 +17,7 @@ import {
 import {Message, Loading} from '../components/Status';
 import type {Cover} from '../core/types';
 import PublishedCovers from '../components/PublishedCovers';
+import Select from '../components/Select';
 
 interface Contact {
   id: string;
@@ -384,16 +385,17 @@ export default function SharedDiaries() {
               <p>You need an accepted contact first. Go to <strong>Future Letters</strong> to invite someone by email.</p>
             ) : (
               <form onSubmit={handleInvite}>
-                <label>Choose a contact
-                  <select value={inviteContact} onChange={e => setInviteContact(e.target.value)} required>
-                    <option value="">— select —</option>
-                    {contacts
-                      .filter(c => !inviting.members.some(m => m.user_id === c.id && m.status !== 'removed'))
-                      .map(c => <option key={c.id} value={c.id}>{c.email}</option>)}
-                  </select>
-                </label>
+                <Select
+                  label="Choose a contact"
+                  placeholder="Select a trusted contact…"
+                  value={inviteContact}
+                  onChange={v => setInviteContact(v)}
+                  options={contacts
+                    .filter(c => !inviting.members.some(m => m.user_id === c.id && m.status !== 'removed'))
+                    .map(c => ({ value: c.id, label: c.email }))}
+                />
                 <p className="security-note">They will receive an invitation. Only accepted contacts can be invited. The shared diary content key is wrapped with their vault public key — only they can decrypt it.</p>
-                <button className="button gold full" type="submit" disabled={busy}>{busy ? 'Inviting…' : 'Send invitation'}</button>
+                <button className="button gold full" type="submit" disabled={busy || !inviteContact}>{busy ? 'Inviting…' : 'Send invitation'}</button>
               </form>
             )}
           </section>

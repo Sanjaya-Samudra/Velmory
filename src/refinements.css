@@ -116,3 +116,389 @@
 .update-banner{position:fixed;z-index:1000;right:1rem;bottom:1rem;display:flex;align-items:center;gap:.65rem;max-width:min(92vw,520px);padding:.75rem 1rem;border:1px solid rgba(209,170,91,.55);border-radius:16px;background:#171814;color:#f5ead4}.update-banner span{flex:1}
 .first-diary-steps{display:grid;gap:.45rem;max-width:440px;margin:1rem auto;padding:0;list-style:none;text-align:left}.first-diary-steps li{display:flex;gap:.65rem;align-items:center}.first-diary-steps b{display:grid;place-items:center;flex:0 0 28px;height:28px;border:1px solid rgba(203,164,91,.5);border-radius:50%;font-size:.75rem}
 .fatal-screen{min-height:100svh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 20%,#49382033,transparent 45%),#0d1210}.fatal-card{width:min(620px,100%);padding:clamp(30px,6vw,68px);text-align:center;border:1px solid var(--line);background:#121a16f2;box-shadow:0 30px 90px #0008}.fatal-card>svg{width:42px;height:42px;color:var(--gold);margin-bottom:22px}.fatal-card .eyebrow{justify-content:center}.fatal-card h1{font-size:clamp(2.5rem,7vw,4rem)}.fatal-card p:not(.eyebrow){color:var(--muted)}.fatal-card .button,.fatal-card .text-link{margin:12px auto 0}
+
+
+/* ==========================================================================
+   VELMORY LUXURY DROPDOWN & SELECT SYSTEM
+   ========================================================================== */
+
+/* Universal Native Select Styling (Ensures any raw select is luxury-themed) */
+select,
+.workspace select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  background-color: #12222c !important;
+  background-image: linear-gradient(135deg, rgba(28, 45, 54, 0.96), rgba(14, 25, 33, 0.98)),
+    url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='15' height='15' viewBox='0 0 24 24' fill='none' stroke='%23d0ae71' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat, no-repeat !important;
+  background-position: center, right 14px center !important;
+  background-size: 100%, 15px !important;
+  border: 1px solid rgba(197, 160, 89, 0.45) !important;
+  border-radius: 8px !important;
+  color: #eedcc0 !important;
+  padding: 10px 42px 10px 14px !important;
+  font-family: inherit !important;
+  font-size: 0.8rem !important;
+  min-height: 44px !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  cursor: pointer !important;
+  transition: border-color 0.22s, box-shadow 0.22s, background-color 0.22s !important;
+}
+
+select:hover,
+.workspace select:hover {
+  border-color: #dfc07e !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), inset 0 0 14px rgba(212, 175, 85, 0.12) !important;
+}
+
+select:focus-visible,
+.workspace select:focus-visible {
+  outline: 2px solid #ebcb89 !important;
+  outline-offset: 3px !important;
+  border-color: #f1cf8e !important;
+}
+
+select option,
+.workspace select option {
+  background-color: #0f1e27 !important;
+  color: #eedcc0 !important;
+  padding: 10px 14px !important;
+}
+
+/* Custom <Select /> Component */
+.vel-select {
+  position: relative;
+  min-width: 0;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+}
+
+.vel-select .control-label {
+  display: block;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: #cdbb96;
+  margin-bottom: 7px;
+  font-weight: 500;
+}
+
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(28, 44, 53, 0.95), rgba(13, 24, 32, 0.98)) !important;
+  border: 1px solid rgba(197, 160, 89, 0.45) !important;
+  border-radius: 8px !important;
+  color: #e8ddc7 !important;
+  min-height: 44px;
+  padding: 10px 14px !important;
+  width: 100%;
+  font-size: 0.78rem !important;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: border-color 0.22s, box-shadow 0.22s, background 0.22s, transform 0.15s;
+}
+
+.select-trigger:hover:not(:disabled) {
+  border-color: #dfc07e !important;
+  background: linear-gradient(135deg, rgba(34, 54, 65, 0.96), rgba(17, 30, 40, 0.98)) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4), inset 0 0 14px rgba(212, 175, 85, 0.12);
+  transform: translateY(-1px);
+}
+
+.vel-select.is-open .select-trigger {
+  border-color: #f1cf8e !important;
+  background: linear-gradient(135deg, rgba(34, 54, 65, 0.98), rgba(17, 30, 40, 0.98)) !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 85, 0.22), 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.select-trigger:focus-visible {
+  outline: 2px solid #ebcb89 !important;
+  outline-offset: 3px !important;
+}
+
+.select-value {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+}
+
+.select-value.is-placeholder {
+  color: #a49e8c;
+  font-style: italic;
+  font-weight: 400;
+}
+
+.select-chevron {
+  flex-shrink: 0;
+  color: #d0ae71 !important;
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.2s;
+}
+
+.select-chevron.is-rotated {
+  transform: rotate(180deg);
+  color: #ffd98a !important;
+}
+
+.vel-select.is-disabled .select-trigger {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+/* Floating Options Listbox */
+.select-options {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 250 !important;
+  padding: 6px !important;
+  background: linear-gradient(160deg, rgba(18, 35, 45, 0.98), rgba(10, 20, 27, 0.99)) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(212, 175, 85, 0.55) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75), 0 2px 12px rgba(212, 175, 85, 0.15) !important;
+  max-height: 280px !important;
+  overflow-y: auto !important;
+  animation: velSelectFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  scrollbar-width: thin;
+  scrollbar-color: #ae8d4b rgba(17, 35, 46, 0.6);
+}
+
+.select-options.placement-below {
+  top: calc(100% + 6px) !important;
+}
+
+.select-options.placement-above {
+  bottom: calc(100% + 6px) !important;
+}
+
+.select-option-item {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  width: 100% !important;
+  text-align: left !important;
+  background: transparent !important;
+  color: #ded6c2 !important;
+  padding: 10px 14px !important;
+  border-radius: 6px !important;
+  font-size: 0.77rem !important;
+  border: 0 !important;
+  margin-bottom: 2px !important;
+  cursor: pointer !important;
+  transition: background 0.18s, color 0.18s, padding-left 0.18s !important;
+  white-space: normal !important;
+  line-height: 1.4 !important;
+}
+
+.select-option-item:hover,
+.select-option-item:focus,
+.select-option-item:focus-visible {
+  background: linear-gradient(90deg, rgba(212, 175, 85, 0.22), rgba(212, 175, 85, 0.05)) !important;
+  color: #fff2d3 !important;
+  outline: none !important;
+  padding-left: 17px !important;
+}
+
+.select-option-item.is-selected {
+  background: linear-gradient(90deg, rgba(212, 175, 85, 0.28), rgba(212, 175, 85, 0.09)) !important;
+  color: #ffd98a !important;
+  font-weight: 600 !important;
+}
+
+.select-option-item .option-label {
+  flex: 1;
+  min-width: 0;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.select-option-item .option-desc {
+  display: block;
+  font-size: 0.65rem;
+  color: #a49e8c;
+  margin-top: 3px;
+}
+
+.select-option-item .option-check {
+  color: #ffd98a !important;
+  flex-shrink: 0;
+  margin-left: 10px;
+  filter: drop-shadow(0 0 3px rgba(255, 217, 138, 0.45));
+}
+
+.select-empty-note {
+  padding: 14px;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #a49e8c;
+  font-style: italic;
+}
+
+@keyframes velSelectFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Scrollbars for select menus */
+.select-options::-webkit-scrollbar {
+  width: 6px;
+}
+
+.select-options::-webkit-scrollbar-track {
+  background: rgba(14, 28, 37, 0.6);
+  border-radius: 4px;
+}
+
+.select-options::-webkit-scrollbar-thumb {
+  background: rgba(208, 174, 113, 0.4);
+  border-radius: 4px;
+}
+
+.select-options::-webkit-scrollbar-thumb:hover {
+  background: rgba(208, 174, 113, 0.7);
+}
+
+/* ==========================================================================
+   ELEVATED ACCORDIONS & DETAILS DROPDOWNS
+   ========================================================================== */
+
+details.vel-details,
+details.page-details,
+details.received-letters,
+details.contacts-panel,
+details.security-details,
+details.search-refine {
+  background: linear-gradient(135deg, rgba(24, 39, 47, 0.75), rgba(12, 23, 29, 0.85));
+  border: 1px solid rgba(181, 152, 89, 0.35);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 16px 0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
+}
+
+details.vel-details:hover,
+details.page-details:hover,
+details.received-letters:hover,
+details.contacts-panel:hover,
+details.security-details:hover,
+details.search-refine:hover {
+  border-color: rgba(212, 175, 85, 0.55);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+details.vel-details[open],
+details.page-details[open],
+details.received-letters[open],
+details.contacts-panel[open],
+details.security-details[open],
+details.search-refine[open] {
+  border-color: rgba(212, 175, 85, 0.65);
+  background: linear-gradient(135deg, rgba(26, 43, 52, 0.85), rgba(14, 25, 32, 0.95));
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.4), inset 0 0 16px rgba(212, 175, 85, 0.05);
+}
+
+details summary::-webkit-details-marker {
+  display: none !important;
+}
+
+details summary {
+  list-style: none !important;
+  cursor: pointer;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: #eedcc0;
+  font-family: var(--serif, 'Cormorant Garamond', Georgia, serif);
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+  padding: 2px 0;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+details summary:hover {
+  color: #fff1d2;
+}
+
+details summary::after {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid #d0ae71;
+  border-bottom: 2px solid #d0ae71;
+  transform: rotate(45deg);
+  transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.2s;
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+details[open] > summary::after {
+  transform: rotate(-135deg);
+  border-color: #ffd98a;
+}
+
+details[open] > summary {
+  margin-bottom: 16px;
+  border-bottom: 1px solid rgba(212, 175, 85, 0.2);
+  padding-bottom: 12px;
+}
+
+.vel-details-content {
+  color: #c9c3b4;
+  font-size: 0.85rem;
+  line-height: 1.8;
+  animation: velSelectFadeIn 0.25s ease-out;
+}
+
+/* Home Page FAQ Accordions Group */
+.faq-section {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.vel-accordion-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 36px;
+  text-align: left;
+}
+
+.vel-accordion-group details.vel-details {
+  margin: 0;
+}
+
+/* Sample Experience Dropdown Selector */
+.sample-select-wrap {
+  width: min(100%, 340px);
+}
+
+.sample-select-wrap .select-trigger {
+  min-height: 40px;
+  font-size: 0.74rem;
+  padding: 8px 12px;
+}
+
+/* Invite modal contact picker */
+.invite-contact-picker {
+  margin: 16px 0;
+}
