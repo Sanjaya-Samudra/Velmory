@@ -28,9 +28,9 @@ The browser tests use installed Google Chrome. The source dependencies are locke
 
 1. Create a Supabase project under your own account. Apply all migrations in `supabase/migrations` in order; see `docs/BACKEND.md`.
 2. Copy `.env.example` to `.env.local`. Fill in your public Supabase URL and anonymous/publishable key. Never place the service-role key in a `VITE_` variable.
-3. Configure Google OAuth and approved redirect URLs. Configure Brevo as the custom SMTP provider. Verify confirmation and password recovery using real test accounts.
+3. Configure Google OAuth and approved redirect URLs. Configure Resend (or Brevo) as the custom SMTP provider. Verify confirmation and password recovery using real test accounts.
 4. Only after email checks pass, enable `service_settings.email_signup_enabled` through trusted SQL, then set `VITE_EMAIL_AUTH_READY=true`.
-5. Deploy `account-delete`, `letter-dispatch`, `maintenance`, `media`, and `artwork` Edge Functions. Set server secrets `BREVO_API_KEY`, `MAIL_FROM`, `APP_URL`, and `SCHEDULER_SECRET` in Supabase.
+5. Deploy `account-delete`, `letter-dispatch`, `maintenance`, `media`, and `artwork` Edge Functions. Set server secrets `RESEND_API_KEY` (or `BREVO_API_KEY`), `MAIL_FROM`, `APP_URL`, and `SCHEDULER_SECRET` in Supabase.
 6. Put `project_url` and `scheduler_secret` into Supabase Vault and apply `supabase/schedule.sql` once. The scheduler authenticates with its own secret, not a public anonymous key.
 7. Promote your own account to administrator by inserting its UUID into `public.user_roles` through the trusted SQL console. Use `/app/admin` and enroll an authenticator. Every administrative operation requires AAL2.
 8. Deploy `dist/` to Cloudflare Pages with build command `npm run build` and output directory `dist`. Set the public environment variables at build time, then rebuild. Update production redirects and Edge Function `APP_URL`.

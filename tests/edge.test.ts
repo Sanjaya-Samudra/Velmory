@@ -12,7 +12,7 @@ function harness(){
  const blobs=new Map<string,Uint8Array>();const calls:{name:string;body:any}[]=[];const emails:any[]=[];
  const runtime:Runtime={env:name=>values[name],fetch:async(input,init)=>{
   const req=new Request(input,init),url=new URL(req.url),path=url.pathname;
-  if(url.hostname==='api.brevo.com'){emails.push(await req.json());return Response.json({messageId:'test'},{status:providerStatus})}
+  if(url.hostname==='api.brevo.com'||url.hostname==='api.resend.com'){emails.push(await req.json());return Response.json({messageId:'test',id:'test'},{status:providerStatus})}
   if(path==='/auth/v1/user')return authenticated?Response.json({id:alice,aud:'authenticated',email:'alice@example.test'}):Response.json({message:'Unauthorized'},{status:401});
   if(path.startsWith('/rest/v1/rpc/')){
    const name=path.split('/').at(-1)!;const body=await req.json();calls.push({name,body});
@@ -66,6 +66,11 @@ it('releases letters even when email configuration is unavailable',async()=>{
 it('sends only generic notifications and records retryable provider failures',async()=>{
  const h=harness();h.setProviderStatus(503);const result=await dispatchHandler(h.runtime)(new Request('https://local.example/functions/v1/letter-dispatch',{method:'POST',headers:{Authorization:'Bearer scheduler-secret'}}));expect(result.status).toBe(200);
  expect(h.emails).toHaveLength(1);expect(h.emails[0].headers.idempotencyKey).toBe(id);expect(h.emails[0]).not.toHaveProperty('attachment');expect(h.calls.find(c=>c.name==='finish_notification')?.body.p_result).toBe('provider_rejected');
+});
+it('sends notifications via Resend API when RESEND_API_KEY is configured',async()=>{
+ const h=harness();delete h.values.BREVO_API_KEY;h.values.RESEND_API_KEY='re_test_key';
+ const result=await dispatchHandler(h.runtime)(new Request('https://local.example/functions/v1/letter-dispatch',{method:'POST',headers:{Authorization:'Bearer scheduler-secret'}}));
+ expect(result.status).toBe(200);expect(h.emails).toHaveLength(1);expect(h.emails[0].to).toEqual(['recipient@example.test']);expect(h.emails[0].from).toContain('mail@example.test');
 });
 it('does not send a claimed notification cancelled before dispatch',async()=>{
  const h=harness();h.setAllowed(false);await dispatchHandler(h.runtime)(new Request('https://local.example/functions/v1/letter-dispatch',{method:'POST',headers:{Authorization:'Bearer scheduler-secret'}}));expect(h.emails).toHaveLength(0);expect(h.calls.find(c=>c.name==='finish_notification')?.body.p_result).toBe('cancelled');
