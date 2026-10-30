@@ -21,8 +21,12 @@ export async function json(request:Request,max=4096):Promise<Record<string,unkno
 export const uuid=(value:unknown)=>{if(typeof value!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value))throw new HttpError(400,'Invalid identifier');return value};
 export async function sha256(value:Uint8Array){return [...new Uint8Array(await crypto.subtle.digest('SHA-256',value as Uint8Array<ArrayBuffer>))].map(n=>n.toString(16).padStart(2,'0')).join('')}
 export function endpoint(runtime:Runtime,handler:(req:Request)=>Promise<Response>){return async(req:Request)=>{
- const origin=runtime.env('APP_URL')??'http://127.0.0.1:5173';const headers={'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'GET, POST, PUT, DELETE, OPTIONS','Vary':'Origin','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'none'",'Strict-Transport-Security':'max-age=31536000; includeSubDomains'};
- if(req.headers.has('Origin')&&req.headers.get('Origin')!==origin)return new Response('Origin unavailable',{status:403,headers});
+ const configured=runtime.env('APP_URL')??'https://velmory.pages.dev';
+ const allowed=new Set([configured,'https://velmory.pages.dev','http://127.0.0.1:5173','http://localhost:5173',...configured.split(',').map(s=>s.trim())]);
+ const reqOrigin=req.headers.get('Origin');
+ const origin=reqOrigin&&allowed.has(reqOrigin)?reqOrigin:(configured.split(',')[0]||'https://velmory.pages.dev');
+ const headers={'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Headers':'authorization, x-client-info, apikey, content-type','Access-Control-Allow-Methods':'GET, POST, PUT, DELETE, OPTIONS','Vary':'Origin','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'none'",'Strict-Transport-Security':'max-age=31536000; includeSubDomains'};
+ if(reqOrigin&&!allowed.has(reqOrigin))return new Response('Origin unavailable',{status:403,headers});
  if(req.method==='OPTIONS')return new Response(null,{status:204,headers});
  try{const response=await handler(req);for(const [k,v] of Object.entries(headers))response.headers.set(k,v);return response}catch(e){return Response.json({error:e instanceof HttpError?e.message:'Service temporarily unavailable'},{status:e instanceof HttpError?e.status:503,headers})}
 }}

@@ -1,7 +1,7 @@
 project_id = "velmory"
 [auth]
-site_url = "http://127.0.0.1:5173"
-additional_redirect_urls = ["http://127.0.0.1:5173/app", "http://127.0.0.1:5173/auth/reset"]
+site_url = "https://velmory.pages.dev"
+additional_redirect_urls = ["https://velmory.pages.dev/app", "https://velmory.pages.dev/auth/reset", "http://127.0.0.1:5173/app", "http://127.0.0.1:5173/auth/reset"]
 minimum_password_length = 12
 [auth.email]
 enable_signup = true
