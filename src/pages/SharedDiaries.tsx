@@ -1,7 +1,7 @@
 import '../shared-library.css';
 import {useEffect, useState, useCallback} from 'react';
 import {useNavigate} from 'react-router-dom';
-import {Users, Plus, UserPlus, Trash2, LogOut, Check, X, Calendar, Heart} from 'lucide-react';
+import {Users, Plus, UserPlus, Trash2, LogOut, Check, X, Calendar, Heart, BookOpen, Share2} from 'lucide-react';
 import {useSession} from '../core/Session';
 import {backend, checkError} from '../core/backend';
 import {
@@ -15,10 +15,12 @@ import {
   deleteSharedDiary,
   updateSharedDiaryMilestone,
   getSharedKey,
+  shareExistingDiary,
   type SharedDiaryRecord,
 } from '../core/sharedDiary';
+import {readDiaries, saveDiary, flushWrites} from '../core/repository';
 import {Message, Loading} from '../components/Status';
-import type {Cover} from '../core/types';
+import type {Cover, Diary} from '../core/types';
 import PublishedCovers from '../components/PublishedCovers';
 import Select from '../components/Select';
 
@@ -49,7 +51,13 @@ function formatMilestone(dateStr: string, label?: string | null): string {
   }
 }
 
-export default function SharedDiaries() {
+export default function SharedDiaries({
+  privateDiaries,
+  onUpdatePrivateDiary,
+}: {
+  privateDiaries?: Diary[];
+  onUpdatePrivateDiary?: (d: Diary) => Promise<void>;
+} = {}) {
   const {account, key} = useSession();
   const navigate = useNavigate();
 
@@ -59,6 +67,21 @@ export default function SharedDiaries() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // Private diaries available to share
+  const [availablePrivateDiaries, setAvailablePrivateDiaries] = useState<Diary[]>(privateDiaries ?? []);
+  const [sharingExisting, setSharingExisting] = useState(false);
+  const [selectedDiaryId, setSelectedDiaryId] = useState('');
+  const [existingMilestoneDate, setExistingMilestoneDate] = useState('');
+  const [existingMilestoneLabel, setExistingMilestoneLabel] = useState('');
+
+  useEffect(() => {
+    if (privateDiaries) {
+      setAvailablePrivateDiaries(privateDiaries);
+    } else if (account?.id && key) {
+      void readDiaries(account.id, key).then(setAvailablePrivateDiaries).catch(() => {});
+    }
+  }, [privateDiaries, account?.id, key]);
 
   // Create modal state
   const [creating, setCreating] = useState(false);
@@ -133,6 +156,36 @@ export default function SharedDiaries() {
       setNewMilestoneDate('');
       setNewMilestoneLabel('');
       setNotice('Shared diary created! Invite a contact to start writing together.');
+    });
+  };
+
+  const handleShareExisting = (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetDiary = availablePrivateDiaries.find(d => d.id === selectedDiaryId);
+    if (!targetDiary) return;
+    void act(async () => {
+      if (!key) throw new Error('Vault locked');
+      await flushWrites();
+      const sharedId = await shareExistingDiary(targetDiary, key);
+      if (existingMilestoneDate || existingMilestoneLabel) {
+        await updateSharedDiaryMilestone(
+          sharedId,
+          existingMilestoneDate || null,
+          existingMilestoneLabel.trim() || null
+        );
+      }
+      const updated = { ...targetDiary, sharedDiaryId: sharedId };
+      if (onUpdatePrivateDiary) {
+        await onUpdatePrivateDiary(updated);
+      } else if (account) {
+        await saveDiary(account.id, key, updated);
+      }
+      setAvailablePrivateDiaries(prev => prev.map(d => d.id === updated.id ? updated : d));
+      setSharingExisting(false);
+      setSelectedDiaryId('');
+      setExistingMilestoneDate('');
+      setExistingMilestoneLabel('');
+      setNotice(`Shared edition of “${targetDiary.title}” created! Invite someone special to start co-writing.`);
     });
   };
 
@@ -216,9 +269,14 @@ export default function SharedDiaries() {
           <p>Some stories are better written together.</p>
         </div>
         {!account?.local && (
-          <button className="button gold" onClick={() => setCreating(true)}>
-            <Plus size={16} /> New shared diary
-          </button>
+          <div style={{display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap'}}>
+            <button className="button glass" onClick={() => setSharingExisting(true)}>
+              <BookOpen size={16} /> Share existing diary
+            </button>
+            <button className="button gold" onClick={() => setCreating(true)}>
+              <Plus size={16} /> New shared diary
+            </button>
+          </div>
         )}
       </section>
 
@@ -279,8 +337,15 @@ export default function SharedDiaries() {
         <div className="empty-state">
           <Users size={32}/>
           <h2>No shared diaries yet.</h2>
-          <p>Create a shared diary and invite someone you love to write together.</p>
-          <button className="button gold" onClick={() => setCreating(true)}><Plus size={16}/> Create a shared diary</button>
+          <p>Create a shared diary or select an existing diary to start writing together.</p>
+          <div style={{display:'flex', gap:'12px', justifyContent:'center', marginTop:'16px', flexWrap:'wrap'}}>
+            <button className="button gold" onClick={() => setCreating(true)}>
+              <Plus size={16}/> Create a shared diary
+            </button>
+            <button className="button glass" onClick={() => setSharingExisting(true)}>
+              <BookOpen size={16}/> Share an existing diary
+            </button>
+          </div>
         </div>
       )}
 
@@ -293,6 +358,10 @@ export default function SharedDiaries() {
             <button className="dialog-close icon-button" aria-label="Close" onClick={() => setCreating(false)}><X /></button>
             <p className="eyebrow">A NEW SHARED CHAPTER</p>
             <h2 id="create-shared-title">Start writing together.</h2>
+            <div style={{display:'flex',gap:'8px',marginBottom:'1.25rem'}}>
+              <button type="button" className="button gold small" style={{flex:1}}>Start fresh</button>
+              <button type="button" className="button glass small" style={{flex:1}} onClick={()=>{setCreating(false);setSharingExisting(true);}}><BookOpen size={14}/> From existing diary</button>
+            </div>
             <form onSubmit={handleCreate}>
               <label>Diary name
                 <input autoFocus required maxLength={65} value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Our story, 2026" />
@@ -320,6 +389,139 @@ export default function SharedDiaries() {
               </div>
 
               <button className="button gold full" style={{marginTop:'1rem'}} type="submit" disabled={busy}>{busy ? 'Creating…' : 'Create shared diary'}</button>
+            </form>
+          </section>
+        </div>
+      )}
+
+      {/* Share existing diary modal */}
+      {sharingExisting && (
+        <div className="modal-backdrop" onMouseDown={e => {if (e.target === e.currentTarget) setSharingExisting(false);}}>
+          <section className="dialog" role="dialog" aria-modal="true" aria-labelledby="share-existing-title" style={{maxWidth: '560px'}}>
+            <button className="dialog-close icon-button" aria-label="Close" onClick={() => setSharingExisting(false)}><X /></button>
+            <p className="eyebrow">BRING A STORY TOGETHER</p>
+            <h2 id="share-existing-title">Share an existing diary.</h2>
+            <div style={{display:'flex',gap:'8px',marginBottom:'1.25rem'}}>
+              <button type="button" className="button glass small" style={{flex:1}} onClick={()=>{setSharingExisting(false);setCreating(true);}}>Start fresh</button>
+              <button type="button" className="button gold small" style={{flex:1}}><BookOpen size={14}/> From existing diary</button>
+            </div>
+            <p style={{fontSize:'0.82rem',color:'#c7c7b9',marginBottom:'1rem'}}>
+              Choose a diary from your library. A shared edition will be created with its current pages. Your private original remains safely preserved as a snapshot.
+            </p>
+
+            <form onSubmit={handleShareExisting}>
+              {availablePrivateDiaries.filter(d => !d.archived).length === 0 ? (
+                <div style={{padding:'24px',textAlign:'center',background:'rgba(255,255,255,0.03)',borderRadius:'8px',margin:'16px 0'}}>
+                  <BookOpen size={28} style={{color:'#d4af37',marginBottom:'8px'}} />
+                  <p style={{fontSize:'0.85rem',color:'#ded1b7'}}>You don't have any private diaries in your library yet.</p>
+                  <button type="button" className="button gold small" style={{marginTop:'12px'}} onClick={()=>{setSharingExisting(false);setCreating(true);}}>
+                    <Plus size={14}/> Create a new shared diary instead
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <label style={{marginBottom:'6px'}}>Select diary to share</label>
+                  <div className="existing-diaries-picker" style={{display:'grid',gap:'8px',maxHeight:'230px',overflowY:'auto',paddingRight:'4px',margin:'6px 0 16px'}}>
+                    {availablePrivateDiaries.filter(d => !d.archived).map(d => {
+                      const isSelected = selectedDiaryId === d.id;
+                      const isAlreadyShared = Boolean(d.sharedDiaryId);
+                      const hasIncompatibleMedia = d.pages.some(p => p.seal || p.objects.some(o => o.audio));
+
+                      return (
+                        <div
+                          key={d.id}
+                          onClick={() => {
+                            if (!isAlreadyShared) setSelectedDiaryId(d.id);
+                          }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '10px 14px',
+                            borderRadius: '8px',
+                            border: isSelected ? '1.5px solid var(--gold,#d4af37)' : '1px solid rgba(212,175,55,0.2)',
+                            background: isSelected ? 'rgba(212,175,55,0.12)' : isAlreadyShared ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.03)',
+                            cursor: isAlreadyShared ? 'not-allowed' : 'pointer',
+                            opacity: isAlreadyShared ? 0.6 : 1,
+                            transition: 'all 0.2s',
+                          }}
+                        >
+                          <div className={`cover-swatch ${d.cover}`} aria-hidden="true" style={{width:32,height:44,borderRadius:3,flexShrink:0}}>
+                            <span>V</span>
+                          </div>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                              <strong style={{fontSize:'0.92rem',color:isSelected?'#f6ddb0':'#eed7ac',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+                                {d.title}
+                              </strong>
+                              {isAlreadyShared && (
+                                <small style={{fontSize:'0.62rem',padding:'1px 6px',borderRadius:'10px',background:'rgba(212,175,55,0.15)',color:'#d4af37'}}>
+                                  Already shared
+                                </small>
+                              )}
+                            </div>
+                            <small style={{fontSize:'0.72rem',color:'#9ea693'}}>
+                              {d.pages.length} {d.pages.length === 1 ? 'page' : 'pages'}
+                              {hasIncompatibleMedia ? ' · ⚠️ Has sealed pages or audio' : ''}
+                            </small>
+                          </div>
+                          <div style={{
+                            width: 18,
+                            height: 18,
+                            borderRadius: '50%',
+                            border: isSelected ? '5px solid #d4af37' : '1.5px solid rgba(212,175,55,0.4)',
+                            background: isSelected ? '#fff' : 'transparent',
+                            flexShrink: 0,
+                          }} />
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {selectedDiaryId && (() => {
+                    const selected = availablePrivateDiaries.find(d => d.id === selectedDiaryId);
+                    if (!selected) return null;
+                    const hasIncompatible = selected.pages.some(p => p.seal || p.objects.some(o => o.audio));
+                    return (
+                      <>
+                        {hasIncompatible && (
+                          <Message error>
+                            This diary contains sealed pages or audio attachments. Unseal protected pages and remove audio attachments in the original book before sharing.
+                          </Message>
+                        )}
+
+                        <div style={{marginTop:'1rem',padding:'0.75rem',background:'rgba(255,255,255,0.03)',borderRadius:'8px'}}>
+                          <p className="eyebrow" style={{marginBottom:'0.5rem'}}>RELATIONSHIP MILESTONE (OPTIONAL)</p>
+                          <label>Special Date (anniversary or start date)
+                            <input type="date" value={existingMilestoneDate} onChange={e => setExistingMilestoneDate(e.target.value)} />
+                          </label>
+                          <label>Milestone Label
+                            <input maxLength={40} value={existingMilestoneLabel} onChange={e => setExistingMilestoneLabel(e.target.value)} placeholder="together, wedding anniversary…" />
+                          </label>
+                        </div>
+                      </>
+                    );
+                  })()}
+
+                  <div className="dialog-actions" style={{marginTop:'1.25rem'}}>
+                    <button className="button glass" type="button" disabled={busy} onClick={()=>setSharingExisting(false)}>
+                      Cancel
+                    </button>
+                    <button
+                      className="button gold"
+                      type="submit"
+                      disabled={
+                        busy ||
+                        !selectedDiaryId ||
+                        Boolean(availablePrivateDiaries.find(d => d.id === selectedDiaryId)?.sharedDiaryId) ||
+                        Boolean(availablePrivateDiaries.find(d => d.id === selectedDiaryId)?.pages.some(p => p.seal || p.objects.some(o => o.audio)))
+                      }
+                    >
+                      {busy ? 'Preparing shared edition…' : 'Create shared edition'}
+                    </button>
+                  </div>
+                </>
+              )}
             </form>
           </section>
         </div>
