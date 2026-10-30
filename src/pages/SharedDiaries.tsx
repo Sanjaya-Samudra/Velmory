@@ -1,12 +1,15 @@
+import '../shared-library.css';
 import {useEffect, useState, useCallback} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {Users, Plus, UserPlus, Trash2, LogOut, Check, X, Calendar, Heart} from 'lucide-react';
 import {useSession} from '../core/Session';
 import {backend, checkError} from '../core/backend';
 import {
+  setSharedMemberRole,
   listSharedDiaries,
   createSharedDiary,
   inviteSharedMember,
+  inviteMemberDirectly,
   acceptSharedInvite,
   removeSharedMember,
   deleteSharedDiary,
@@ -72,7 +75,11 @@ export default function SharedDiaries() {
 
   // Invite modal state
   const [inviting, setInviting] = useState<SharedDiaryRecord | null>(null);
+  const [inviteEmail, setInviteEmail] = useState('');
   const [inviteContact, setInviteContact] = useState('');
+  const [inviteRole, setInviteRole] = useState<'viewer' | 'editor'>('editor');
+ const [managing,setManaging]=useState<string|null>(null);
+ const [removing,setRemoving]=useState<{diary:string;user:string;email:string}|null>(null);
 
   // Delete confirm state
   const [confirmDelete, setConfirmDelete] = useState<SharedDiaryRecord | null>(null);
@@ -148,11 +155,15 @@ export default function SharedDiaries() {
     void act(async () => {
       if (!inviting || !key) return;
       const contact = contacts.find(c => c.id === inviteContact);
-      if (!contact) throw new Error('Choose a contact');
+      const targetEmail = (inviteEmail.trim() || contact?.email || '').trim();
+      if (!targetEmail) throw new Error('Enter an email address or select a contact.');
       const sharedKey = await getSharedKey(inviting.id, inviting.my_wrapped_key, key);
-      await inviteSharedMember(inviting.id, contact.id, contact.public_key, sharedKey);
+      const { email } = await inviteMemberDirectly(inviting.id, targetEmail, sharedKey, inviteRole);
+
       setInviting(null);
-      setNotice(`Invitation sent to ${contact.email}. They can accept from their Shared Diaries page.`);
+      setInviteEmail('');
+      setInviteContact('');
+      setNotice(`Invitation sent to ${email}! They are now also in your trusted circle for Future Letters.`);
     });
   };
 
@@ -197,12 +208,12 @@ export default function SharedDiaries() {
   const active = diaries.filter(d => d.status === 'active');
 
   return (
-    <div className="library-room">
+    <div className="library-room shared-library">
       <section className="room-heading">
         <div>
           <p className="eyebrow">TOGETHER, WE REMEMBER</p>
           <h1>Shared diaries.</h1>
-          <p>A space where two hearts can write the same story.</p>
+          <p>Some stories are better written together.</p>
         </div>
         {!account?.local && (
           <button className="button gold" onClick={() => setCreating(true)}>
@@ -243,63 +254,24 @@ export default function SharedDiaries() {
       )}
 
       {!account?.local && active.length > 0 && (
-        <section>
-          <div className="library-shelf" aria-label="Shared diary shelf">
-            <div className="shelf-light" />
-            <div className="book-collection">
-              {active.map(d => {
-                const activeCount = d.members.filter(m => m.status === 'active').length;
-                return (
-                  <div className="shelf-item" key={d.id}>
-                    <button
-                      className={`book-cover cover-${d.cover}`}
-                      onClick={() => handleOpen(d)}
-                      aria-label={`Open ${d.title}`}
-                      style={{cursor:'pointer',border:'none',background:'none',padding:0}}
-                    >
-                      <div className={`cover-swatch ${d.cover}`} style={{width:80,height:110,borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.5rem',color:'white',boxShadow:'0 4px 16px rgba(0,0,0,0.18)'}}>V</div>
-                    </button>
-                    <p><strong>{d.title}</strong></p>
-                    <p><Users size={13}/> {activeCount} {activeCount === 1 ? 'person' : 'people'} · <small>{d.my_role === 'owner' ? 'Your diary' : 'Editor'}</small></p>
-                    {d.milestone_date && (
-                      <p style={{fontSize:'0.82rem',color:'var(--gold,#d4af37)',margin:'4px 0'}}>
-                        {formatMilestone(d.milestone_date, d.milestone_label)}
-                      </p>
-                    )}
-                    <div className="diary-actions">
-                      <button className="diary-action" onClick={() => handleOpen(d)}>Open</button>
-                      <button
-                        className="diary-action"
-                        onClick={() => {
-                          setEditingMilestone(d);
-                          setEditMilestoneDate(d.milestone_date || '');
-                          setEditMilestoneLabel(d.milestone_label || '');
-                        }}
-                        title="Set relationship date or countdown"
-                      >
-                        <Heart size={13}/> Milestone
-                      </button>
-                      {d.my_role === 'owner' && (
-                        <>
-                          <button className="diary-action" onClick={() => {setInviting(d); setInviteContact(contacts[0]?.id ?? '');}}>
-                            <UserPlus size={13}/> Invite
-                          </button>
-                          <button className="diary-action delete-diary" onClick={() => setConfirmDelete(d)}>
-                            <Trash2 size={13}/> Delete
-                          </button>
-                        </>
-                      )}
-                      {d.my_role === 'editor' && (
-                        <button className="diary-action" onClick={() => handleLeave(d)}>
-                          <LogOut size={13}/> Leave
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        <section className="shared-collection" aria-label="Shared diaries">
+          <div className="shared-collection-heading"><span>YOUR SHARED COLLECTION</span><span>{active.length} {active.length===1?'diary':'diaries'}</span></div>
+          <div className="shared-card-grid">{active.map(d=>{
+            const members=d.members.filter(m=>m.status==='active');
+            return <article className="shared-book-card" key={d.id}>
+              <div className="shared-book-stage"><span className="shared-role">{d.my_role==='owner'?'OWNED BY YOU':d.my_role==='viewer'?'VIEW ONLY':'WRITING TOGETHER'}</span>
+                <button className={'shared-leather-book '+d.cover} onClick={()=>handleOpen(d)} aria-label={'Open '+d.title}><span className="shared-book-border"/><span className="shared-book-edition">A STORY WE SHARE</span><img src="/assets/Logo-V.png" alt=""/><span className="shared-book-title">{d.title}</span><span className="shared-book-flourish">✧</span><span className="shared-book-year">{new Date(d.created_at).getFullYear()}</span></button>
+              </div>
+              <div className="shared-card-details"><h2>{d.title}</h2><div className="shared-people"><div className="shared-avatars" aria-hidden="true">{members.slice(0,3).map(m=><span key={m.user_id}>{m.email.slice(0,1).toUpperCase()}</span>)}</div><span>{members.length===1?'Your story, ready to share':members.length+' people sharing memories'}</span></div>
+              {d.milestone_date&&<p className="shared-milestone"><Heart size={14}/>{formatMilestone(d.milestone_date,d.milestone_label)}</p>}
+              <button className="button gold shared-open" onClick={()=>handleOpen(d)}>Open diary <span aria-hidden="true">↗</span></button>
+              <div className="shared-card-actions">
+                {d.my_role==='owner'&&<><button disabled={busy} onClick={()=>{setInviting(d);setInviteContact(contacts[0]?.id??'')}}><UserPlus size={16}/> Invite</button><button onClick={()=>setManaging(d.id)}><Users size={16}/> Manage access</button></>}
+                {d.my_role!=='viewer'&&<button onClick={()=>{setEditingMilestone(d);setEditMilestoneDate(d.milestone_date||'');setEditMilestoneLabel(d.milestone_label||'')}}><Heart size={16}/> Milestone</button>}
+                {d.my_role==='owner'?<button className="shared-delete" aria-label={'Delete '+d.title} onClick={()=>setConfirmDelete(d)}><Trash2 size={16}/><span>Delete</span></button>:<button onClick={()=>handleLeave(d)}><LogOut size={16}/> Leave</button>}
+              </div></div>
+            </article>
+          })}</div>
         </section>
       )}
 
@@ -312,6 +284,8 @@ export default function SharedDiaries() {
         </div>
       )}
 
+      {managing&&<div className="modal-backdrop"><section className="dialog" role="dialog" aria-modal="true" aria-labelledby="access-title"><h2 id="access-title">Who can open this book?</h2><p>Changes apply to future server access. Downloaded copies cannot be recalled.</p>{diaries.find(d=>d.id===managing)?.members.filter(m=>m.role!=='owner').map(m=><div key={m.user_id} className="settings-card"><p>{m.email} · {m.status}</p><Select label={'Permission for '+m.email} value={m.role} options={[{value:'viewer',label:'Can view'},{value:'editor',label:'Can edit'}]} onChange={role=>{if(!busy)void act(()=>setSharedMemberRole(managing,m.user_id,role as 'viewer'|'editor'))}}/><button className="button danger" disabled={busy} onClick={()=>setRemoving({diary:managing,user:m.user_id,email:m.email})}>Remove access</button></div>)}<button className="button glass" disabled={busy} onClick={()=>setManaging(null)}>Done</button></section></div>}
+      {removing&&<div className="modal-backdrop"><section className="dialog" role="dialog" aria-modal="true" aria-labelledby="remove-access-title"><h2 id="remove-access-title">Remove access?</h2><p>{removing.email} will no longer be able to fetch or edit this diary.</p><button className="button glass" onClick={()=>setRemoving(null)}>Keep access</button><button className="button danger" disabled={busy} onClick={()=>void act(async()=>{await removeSharedMember(removing.diary,removing.user);setRemoving(null)})}>Remove person</button></section></div>}
       {/* Create modal */}
       {creating && (
         <div className="modal-backdrop" onMouseDown={e => {if (e.target === e.currentTarget) setCreating(false);}}>
@@ -381,23 +355,66 @@ export default function SharedDiaries() {
             <button className="dialog-close icon-button" aria-label="Close" onClick={() => setInviting(null)}><X /></button>
             <p className="eyebrow">INVITE SOMEONE SPECIAL</p>
             <h2 id="invite-title">Invite to "{inviting.title}"</h2>
-            {contacts.length === 0 ? (
-              <p>You need an accepted contact first. Go to <strong>Future Letters</strong> to invite someone by email.</p>
-            ) : (
-              <form onSubmit={handleInvite}>
-                <Select
-                  label="Choose a contact"
-                  placeholder="Select a trusted contact…"
-                  value={inviteContact}
-                  onChange={v => setInviteContact(v)}
-                  options={contacts
-                    .filter(c => !inviting.members.some(m => m.user_id === c.id && m.status !== 'removed'))
-                    .map(c => ({ value: c.id, label: c.email }))}
+            <form onSubmit={handleInvite}>
+              <label>
+                Partner or friend's email address
+                <input
+                  type="email"
+                  required={!inviteContact}
+                  placeholder="Enter their Velmory account email…"
+                  value={inviteEmail}
+                  onChange={e => {
+                    setInviteEmail(e.target.value);
+                    if (e.target.value) setInviteContact('');
+                  }}
                 />
-                <p className="security-note">They will receive an invitation. Only accepted contacts can be invited. The shared diary content key is wrapped with their vault public key — only they can decrypt it.</p>
-                <button className="button gold full" type="submit" disabled={busy || !inviteContact}>{busy ? 'Inviting…' : 'Send invitation'}</button>
-              </form>
-            )}
+              </label>
+
+              {contacts.length > 0 && (
+                <div style={{ marginTop: '0.75rem', marginBottom: '0.75rem' }}>
+                  <Select
+                    label="Or choose from your trusted circle"
+                    placeholder="Select an existing contact…"
+                    value={inviteContact}
+                    onChange={v => {
+                      setInviteContact(v);
+                      if (v) {
+                        const found = contacts.find(c => c.id === v);
+                        if (found) setInviteEmail(found.email);
+                      }
+                    }}
+                    options={[
+                      { value: '', label: 'Type an email address manually' },
+                      ...contacts
+                        .filter(c => !inviting.members.some(m => m.user_id === c.id && m.status !== 'removed'))
+                        .map(c => ({ value: c.id, label: c.email }))
+                    ]}
+                  />
+                </div>
+              )}
+
+              <Select
+                label="Access permission"
+                value={inviteRole}
+                onChange={v => setInviteRole(v as 'viewer' | 'editor')}
+                options={[
+                  { value: 'editor', label: 'Can edit (write & turn pages together)' },
+                  { value: 'viewer', label: 'Can view (read-only keepsake)' }
+                ]}
+              />
+
+              <p className="security-note">
+                End-to-end encrypted: the shared diary content key is wrapped using their vault public key. Inviting someone also adds them directly to your Trusted Circle so you can send Future Letters together.
+              </p>
+
+              <button
+                className="button gold full"
+                type="submit"
+                disabled={busy || (!inviteEmail.trim() && !inviteContact)}
+              >
+                {busy ? 'Sending invitation…' : 'Send invitation & Connect'}
+              </button>
+            </form>
           </section>
         </div>
       )}

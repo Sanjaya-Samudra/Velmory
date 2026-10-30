@@ -40,3 +40,29 @@
   letter-spacing: .14em;
   white-space: nowrap;
 }
+
+/* Use the original artwork, cropping only its surrounding canvas in the UI. */
+.hero-book .book-cover-logo {
+  clip-path: inset(20% 12% 18% 12%);
+  mix-blend-mode: screen;
+  width: 17cqw;
+  margin: -3cqw auto -1.6cqw;
+}
+.hero-book .book-cover-tagline {
+  position: absolute;
+  left: 28%;
+  top: 69%;
+  width: 36%;
+  text-align: center;
+  transform: rotate(6deg) skewX(-9deg);
+  transform-origin: center;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.45cqw;
+  letter-spacing: .18em;
+  line-height: 1.6;
+  color: #b69a62;
+  text-shadow: 0 -1px 1px #050b13, 0 1px 0 #e6c98766;
+  opacity: .88;
+  pointer-events: none;
+}

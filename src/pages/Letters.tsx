@@ -21,7 +21,52 @@ export default function Letters(){const {account,key}=useSession();const [batch,
  <div className="letter-filters"><label>Search letters<input value={query} onChange={e=>setQuery(e.target.value)} placeholder="A title or recipient…"/></label><Select label="Letter collection" value={filter} onChange={setFilter} options={[{value:'all',label:'All letters'},{value:'upcoming',label:'Upcoming'},{value:'opened',label:'Ready to open'},{value:'cancelled',label:'Cancelled'}]}/><Select label="Sort letters" value={sort} onChange={setSort} options={[{value:'soon',label:'Opening soonest'},{value:'later',label:'Opening latest'},{value:'title',label:'Title A–Z'}]}/></div><div className="letter-grid">{letters.filter(l=>[l.title,l.recipientName].join(' ').toLowerCase().includes(query.toLowerCase())&&(filter==='all'||filter==='cancelled'&&l.status==='cancelled'||filter==='upcoming'&&l.status!=='cancelled'&&new Date(l.opensAt)>new Date()||filter==='opened'&&l.status!=='cancelled'&&new Date(l.opensAt)<=new Date())).sort((a,b)=>sort==='title'?a.title.localeCompare(b.title):sort==='later'?b.opensAt.localeCompare(a.opensAt):a.opensAt.localeCompare(b.opensAt)).slice(batch*batchSize,(batch+1)*batchSize).map(l=>{const status=deliveries.find(d=>d.id===l.id)?.status??l.status;const due=new Date(l.opensAt)<=new Date();return <article className={`letter-card ${status==='cancelled'?'cancelled':''}`} key={l.id}><div className="envelope-art"><div className="envelope-folds" aria-hidden="true"/><WaxSeal/><span>{status==='cancelled'?'CANCELLED':status==='prepared'?'AWAITING DELIVERY':due?'READY TO OPEN':'SEALED WITH INTENTION'}</span></div><div className="letter-info"><p className="eyebrow">{l.recipientName}</p><h2>{l.title}</h2><p>{new Date(l.opensAt).toLocaleString()}</p><small>{l.timezone}</small><div className="letter-actions"><button className="text-link" onClick={()=>setView({title:l.title,body:l.body,attachments:l.attachments})}>{due?'Read letter':'View creator’s original'}</button>{status==='prepared'&&<button className="text-link" disabled={busy} onClick={()=>retry(l)}>Retry delivery</button>}{status!=='cancelled'&&<button className="text-link" disabled={busy} onClick={()=>setPendingAction({kind:'revoke',letter:l})}>Revoke delivery</button>}{status==='cancelled'&&<button className="text-link letter-delete" disabled={busy} onClick={()=>setPendingAction({kind:'delete',letter:l})}><Trash2 size={13}/> Delete letter</button>}</div></div></article>})}{!letters.length&&<div className="letter-empty"><Mail/><h2>Dear future me…</h2><p>A hope. A reminder. A little encouragement.<br/>Leave something for the person you’re becoming.</p><button className="button glass" onClick={()=>setCompose(true)}>Write your first letter</button></div>}</div>
  <CollectionPager index={batch} total={letters.filter(l=>[l.title,l.recipientName].join(' ').toLowerCase().includes(query.toLowerCase())&&(filter==='all'||filter==='cancelled'&&l.status==='cancelled'||filter==='upcoming'&&l.status!=='cancelled'&&new Date(l.opensAt)>new Date()||filter==='opened'&&l.status!=='cancelled'&&new Date(l.opensAt)<=new Date())).length} size={batchSize} onChange={setBatch} label="letters"/>
  {received.length>0&&<details className="received-letters"><summary>Waiting in your letterbox.</summary>{received.map(l=><div className="received-row" key={l.id}><Mail/><div><strong>A private letter for you</strong><p>{l.status==='cancelled'?'The sender cancelled this letter.':`Opens ${new Date(l.opens_at).toLocaleString()}`}</p></div><button className="button glass" disabled={l.status==='cancelled'||new Date(l.opens_at)>new Date()||busy} onClick={()=>openDelivery(l)}>Open letter</button></div>)}</details>}
- {!account!.local&&<details className="contacts-panel"><summary>Contacts & invitations</summary><p>Invite another registered Velmory member. They must accept before you can send them a letter.</p><form onSubmit={e=>{e.preventDefault();void act(async()=>{const {error}=await backend!.rpc('invite_contact',{p_email:invite});checkError(error);setInvite('');setNotice('If an eligible account exists, an invitation has been created.')})}}><input type="email" required aria-label="Recipient email" value={invite} onChange={e=>setInvite(e.target.value)} placeholder="Their Velmory email address"/><button className="button gold" disabled={busy}><Send size={15}/> Invite</button></form>{contacts.map(c=><div className="contact-row" key={c.invitation_id}><span>{c.email}<small>{c.status}</small></span>{c.status==='pending'&&c.direction==='incoming'&&<button className="button glass small" disabled={busy} onClick={()=>act(async()=>{const {error}=await backend!.rpc('accept_contact',{p_id:c.invitation_id});checkError(error)})}>Accept invitation</button>}{c.status!=='blocked'&&<button className="text-link" onClick={()=>act(async()=>{const {error}=await backend!.rpc('block_contact',{p_id:c.invitation_id});checkError(error)})}>Block</button>}</div>)}</details>}
+ {!account!.local && (
+    <details className="contacts-panel" open={contacts.length > 0}>
+      <summary>Trusted Circle &amp; Contacts ({contacts.filter(c => c.status === 'accepted').length} connected)</summary>
+      <p>Your community connects people you share diaries with and friends you invite here. Anyone in your circle can receive your sealed Future Letters.</p>
+      <form onSubmit={e => {
+        e.preventDefault();
+        void act(async () => {
+          const {error} = await backend!.rpc('invite_contact', {p_email: invite});
+          checkError(error);
+          setInvite('');
+          setNotice('If an eligible account exists, an invitation has been created.');
+        });
+      }}>
+        <input
+          type="email"
+          required
+          aria-label="Recipient email"
+          value={invite}
+          onChange={e => setInvite(e.target.value)}
+          placeholder="Their Velmory email address"
+        />
+        <button className="button gold" disabled={busy}><Send size={15}/> Add to circle</button>
+      </form>
+      {contacts.length === 0 ? (
+        <p className="security-note" style={{marginTop: '0.5rem'}}>No contacts yet. Add someone above or invite them to a Shared Diary to connect automatically.</p>
+      ) : (
+        contacts.map(c => (
+          <div className="contact-row" key={c.invitation_id}>
+            <span>{c.email} <small className={c.status === 'accepted' ? 'tag-badge' : ''}>{c.status === 'accepted' ? 'Connected' : c.status}</small></span>
+            {c.status === 'pending' && c.direction === 'incoming' && (
+              <button className="button glass small" disabled={busy} onClick={() => act(async () => {
+                const {error} = await backend!.rpc('accept_contact', {p_id: c.invitation_id});
+                checkError(error);
+              })}>Accept invitation</button>
+            )}
+            {c.status !== 'blocked' && (
+              <button className="text-link" onClick={() => act(async () => {
+                const {error} = await backend!.rpc('block_contact', {p_id: c.invitation_id});
+                checkError(error);
+              })}>Block</button>
+            )}
+          </div>
+        ))
+      )}
+    </details>
+  )}
  {pendingAction&&<ConfirmDialog title={pendingAction.kind==='delete'?'Delete this revoked letter?':'Revoke this delivery?'} description={pendingAction.kind==='delete'?`“${pendingAction.letter.title}” will be removed from your collection. This cannot be undone.`:'The recipient will no longer be able to open this letter. Any copy already downloaded cannot be recalled.'} confirmLabel={pendingAction.kind==='delete'?'Delete letter':'Revoke delivery'} cancelLabel="Keep letter" busy={busy} onCancel={()=>setPendingAction(null)} onConfirm={()=>{const action=pendingAction;setPendingAction(null);if(action.kind==='delete')removeCancelled(action.letter);else revoke(action.letter)}}/>}
  {compose&&<div className="modal-backdrop"><section className="dialog letter-dialog" role="dialog" aria-modal="true" aria-labelledby="letter-compose-title"><button className="dialog-close icon-button" aria-label="Close letter" onClick={()=>setCompose(false)}><X/></button><p className="eyebrow">A LITTLE OF TODAY, KEPT FOR TOMORROW</p><h2 id="letter-compose-title">Words worth waiting for.</h2><form onSubmit={seal}><Select label="Recipient" value={recipient} onChange={setRecipient} options={[{value:'self',label:'My future self'},...contacts.filter(c=>c.status==='accepted').map(c=>({value:c.id,label:c.email}))]}/><label>Title<input required maxLength={100} value={title} onChange={e=>setTitle(e.target.value)} placeholder="For a day when you need courage"/></label><label>Your letter<textarea required maxLength={15000} rows={7} value={body} onChange={e=>setBody(e.target.value)} placeholder="Dear future me…"/></label><DateField label="Open on" time required value={date} onChange={setDate}/><small className="letter-timezone">Timezone: {Intl.DateTimeFormat().resolvedOptions().timeZone}</small><label>Attachments (up to ten, 4 MB each)<input type="file" multiple onChange={e=>{const chosen=Array.from(e.target.files??[]);try{validateLetterFiles(chosen);setFiles(chosen);setError('')}catch(cause){setFiles([]);e.target.value='';setError((cause as Error).message)}}}/></label>{files.length>0&&<p className="letter-attachment-list">{files.map(file=>file.name).join(' · ')}</p>}<p className="security-note">Sealing fixes this version. You may revoke it and write a replacement. Attachments are encrypted separately. Recipients cannot change the date.</p><button disabled={busy} className="button gold full"><LockKeyhole size={16}/> {busy?'Sealing…':'Seal my letter'}</button></form></section></div>}
  {view&&<div className="modal-backdrop"><article className="opened-letter" role="dialog" aria-modal="true" aria-labelledby="opened-letter-title"><button className="dialog-close icon-button" aria-label="Close letter" onClick={()=>setView(null)}><X/></button><p className="eyebrow">WORDS THAT FOUND THEIR WAY TO YOU</p><h2 id="opened-letter-title">{view.title}</h2><p>{view.body}</p>{!!view.attachments?.length&&<div className="letter-downloads"><h3>Kept with this letter</h3>{view.attachments.map(attachment=><button key={attachment.reference.id} className="button glass small" disabled={busy} onClick={()=>void download(attachment)}>Download {attachment.name}</button>)}</div>}<span className="handwriting">With a little love, from another day.</span></article></div>}

@@ -904,6 +904,179 @@ to authenticated;
 
 
 -- ------------------------------------------------------------------------------
+-- Migration: 013_shared_permissions.sql
+-- ------------------------------------------------------------------------------
+-- Read-only invitations and owner-managed access. Existing clients remain editors.
+alter table public.shared_diary_members drop constraint shared_diary_members_role_check;
+alter table public.shared_diary_members add constraint shared_diary_members_role_check check(role in ('owner','editor','viewer'));
+create function public.set_shared_member_role(p_diary_id uuid,p_user_id uuid,p_role text) returns void
+language plpgsql security definer set search_path='' as $$begin
+ if not public.active_user() or not public.is_shared_diary_owner(p_diary_id) then raise exception 'Owner access required'; end if;
+ if p_role is null or p_role not in ('editor','viewer') then raise exception 'Invalid permission';end if;
+ update public.shared_diary_members set role=p_role where diary_id=p_diary_id and user_id=p_user_id and role<>'owner' and status in ('pending','active');
+ if not found then raise exception 'Member unavailable';end if;
+end$$;
+revoke all on function public.set_shared_member_role(uuid,uuid,text) from public,anon;
+grant execute on function public.set_shared_member_role(uuid,uuid,text) to authenticated;
+create or replace function public.save_shared_page(
+  p_diary_id uuid,
+  p_page_id text,
+  p_expected_revision bigint,
+  p_envelope jsonb,
+  p_deleted boolean default false
+) returns bigint language plpgsql security definer set search_path='' as $$
+declare old public.shared_diary_pages; result bigint;
+begin
+  if not public.active_user() then raise exception 'Account unavailable'; end if;
+  perform public.consume_rate('save_shared_page', 300);
+  if not exists(select 1 from public.shared_diary_members
+    where diary_id=p_diary_id and user_id=auth.uid() and status='active' and role in ('owner','editor') for update)
+    then raise exception 'Not a member of this shared diary'; end if;
+  if p_page_id is null or p_page_id !~ '^[a-zA-Z0-9-]{1,80}$'
+    or not public.valid_cipher(p_envelope)
+    or octet_length(p_envelope::text) > 8000000
+    then raise exception 'Invalid page data'; end if;
+  if p_expected_revision is null or p_expected_revision < 0
+    then raise exception 'Invalid revision'; end if;
+  perform 1 from public.shared_diaries where id=p_diary_id for update;
+  select * into old from public.shared_diary_pages
+    where diary_id=p_diary_id and page_id=p_page_id;
+  if found and old.envelope=p_envelope and old.deleted=p_deleted then return old.revision; end if;
+  if coalesce(old.revision,0) <> p_expected_revision then raise exception 'revision_conflict'; end if;
+  result := coalesce(old.revision,0)+1;
+  insert into public.shared_diary_pages(diary_id, page_id, author_id, envelope, revision, deleted)
+    values(p_diary_id, p_page_id, auth.uid(), p_envelope, result, p_deleted)
+    on conflict(diary_id, page_id) do update
+      set id=default, envelope=excluded.envelope, revision=excluded.revision,
+          deleted=excluded.deleted, author_id=excluded.author_id,
+          updated_at=clock_timestamp();
+  return result;
+end$$;
+
+create or replace function public.update_shared_diary_milestone(
+  p_diary_id uuid,
+  p_milestone_date date,
+  p_milestone_label text
+) returns void language plpgsql security definer set search_path='' as $$
+begin
+  if not public.active_user() then raise exception 'Account unavailable'; end if;
+  if not exists(select 1 from public.shared_diary_members where diary_id=p_diary_id and user_id=auth.uid() and status='active' and role in ('owner','editor'))
+    then raise exception 'Not a member of this shared diary'; end if;
+  if p_milestone_label is not null and length(p_milestone_label) not between 1 and 100
+    then raise exception 'Invalid milestone label'; end if;
+  update public.shared_diaries
+    set milestone_date=p_milestone_date, milestone_label=p_milestone_label
+    where id=p_diary_id;
+end$$;
+
+create function public.invite_shared_member_with_role(p_diary_id uuid,p_user_id uuid,p_wrapped_key text,p_recipient_key text,p_role text) returns void
+language plpgsql security definer set search_path='' as $$begin
+ if p_role is null or p_role not in ('viewer','editor') then raise exception 'Invalid permission';end if;
+ perform public.invite_shared_member(p_diary_id,p_user_id,p_wrapped_key,p_recipient_key);
+ perform public.set_shared_member_role(p_diary_id,p_user_id,p_role);
+end$$;
+revoke all on function public.invite_shared_member_with_role(uuid,uuid,text,text,text) from public,anon;
+grant execute on function public.invite_shared_member_with_role(uuid,uuid,text,text,text) to authenticated;
+
+
+-- ------------------------------------------------------------------------------
+-- Migration: 014_direct_community_sharing.sql
+-- ------------------------------------------------------------------------------
+create or replace function public.lookup_user_for_sharing(p_email text)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare
+  target_user record;
+begin
+  if not public.active_user() then raise exception 'Account unavailable'; end if;
+  if p_email is null or length(trim(p_email)) > 254 then raise exception 'Invalid email'; end if;
+  
+  select p.id, p.email, v.public_key, v.revision
+  into target_user
+  from public.profiles p
+  join public.vaults v on v.owner_id = p.id
+  where lower(trim(p.email)) = lower(trim(p_email))
+    and p.status = 'active';
+    
+  if target_user.id is null then
+    return jsonb_build_object('found', false, 'error', 'No active Velmory account with an initialized vault was found for this email address. Ask them to create an account first.');
+  end if;
+  
+  if target_user.id = auth.uid() then
+    return jsonb_build_object('found', false, 'error', 'You cannot invite your own account.');
+  end if;
+  
+  return jsonb_build_object(
+    'found', true,
+    'id', target_user.id,
+    'email', target_user.email,
+    'public_key', target_user.public_key,
+    'revision', target_user.revision
+  );
+end$$;
+
+revoke all on function public.lookup_user_for_sharing(text) from public, anon;
+grant execute on function public.lookup_user_for_sharing(text) to authenticated;
+
+create or replace function public.invite_shared_member(
+  p_diary_id uuid,
+  p_user_id uuid,
+  p_wrapped_key text,
+  p_recipient_key text
+) returns void language plpgsql security definer set search_path='' as $$
+declare actual_key text;
+begin
+  if not public.active_user() then raise exception 'Account unavailable'; end if;
+  perform public.consume_rate('invite_shared_member', 30);
+  if not exists(select 1 from public.shared_diaries where id=p_diary_id and owner_id=auth.uid())
+    then raise exception 'Diary unavailable or you are not the owner'; end if;
+
+  select v.public_key into actual_key from public.vaults v join public.profiles p on p.id=v.owner_id
+    where v.owner_id=p_user_id and p.status='active';
+  if actual_key is null or actual_key<>p_recipient_key then raise exception 'Recipient key changed. Refresh and confirm the recipient again.'; end if;
+  if length(p_wrapped_key) > 512 then raise exception 'Invalid key material'; end if;
+  if (select count(*) from public.shared_diary_members where diary_id=p_diary_id and status<>'removed') >= 10
+    then raise exception 'Member limit reached (10 per shared diary)'; end if;
+
+  insert into public.shared_diary_members(diary_id, user_id, role, wrapped_key, recipient_key, status)
+    values(p_diary_id, p_user_id, 'editor', p_wrapped_key, p_recipient_key, 'pending')
+    on conflict(diary_id, user_id) do update
+      set wrapped_key=excluded.wrapped_key, recipient_key=excluded.recipient_key, status='pending', invited_at=now(), joined_at=null;
+
+  update public.contacts
+    set status = 'accepted'
+    where (sender_id = auth.uid() and recipient_id = p_user_id)
+       or (sender_id = p_user_id and recipient_id = auth.uid());
+  if not found then
+    insert into public.contacts(sender_id, recipient_id, status)
+    values(auth.uid(), p_user_id, 'accepted');
+  end if;
+end$$;
+
+create or replace function public.accept_shared_invite(p_diary_id uuid) returns void
+language plpgsql security definer set search_path='' as $$
+declare d_owner uuid;
+begin
+  if not public.active_user() then raise exception 'Account unavailable'; end if;
+  update public.shared_diary_members
+    set status='active', joined_at=now()
+    where diary_id=p_diary_id and user_id=auth.uid() and status='pending';
+  if not found then raise exception 'Invitation unavailable'; end if;
+
+  select owner_id into d_owner from public.shared_diaries where id=p_diary_id;
+  if d_owner is not null and d_owner <> auth.uid() then
+    update public.contacts
+      set status = 'accepted'
+      where (sender_id = d_owner and recipient_id = auth.uid())
+         or (sender_id = auth.uid() and recipient_id = d_owner);
+    if not found then
+      insert into public.contacts(sender_id, recipient_id, status)
+      values(d_owner, auth.uid(), 'accepted');
+    end if;
+  end if;
+end$$;
+
+
+-- ------------------------------------------------------------------------------
 -- Enable Email Signup on Service Settings
 -- ------------------------------------------------------------------------------
 UPDATE public.service_settings 

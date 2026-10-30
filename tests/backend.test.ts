@@ -77,8 +77,9 @@ it('secures collaborative shared diaries with member-only access and revision tr
  // Alice invites Bob (accepted contact)
  await db.query('select public.invite_shared_member($1,$2,$3,$4)',[diaryId,bob,'W'.repeat(80),publicKey(bob)]);
 
- // Alice cannot invite Carol (not an accepted contact)
- await expect(db.query('select public.invite_shared_member($1,$2,$3,$4)',[diaryId,carol,'W'.repeat(80),publicKey(carol)])).rejects.toThrow('accepted contact');
+ // Non-existent user without a vault cannot be invited
+ const unknownUser='00000000-0000-4000-8000-000000000099';
+ await expect(db.query('select public.invite_shared_member($1,$2,$3,$4)',[diaryId,unknownUser,'W'.repeat(80),publicKey(unknownUser)])).rejects.toThrow();
 
  // Carol cannot view or list Alice's shared diary
  await login(db,carol);

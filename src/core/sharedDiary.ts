@@ -8,7 +8,7 @@ import type {CipherEnvelope, Cover, DiaryPage} from './types';
 export interface SharedDiaryMember {
   user_id: string;
   email: string;
-  role: 'owner' | 'editor';
+  role: 'owner' | 'editor' | 'viewer';
   status: 'pending' | 'active' | 'removed';
   joined_at: string | null;
 }
@@ -21,7 +21,7 @@ export interface SharedDiaryRecord {
   milestone_date?: string | null;
   milestone_label?: string | null;
   created_at: string;
-  my_role: 'owner' | 'editor';
+  my_role: 'owner' | 'editor' | 'viewer';
   my_wrapped_key: string;
   status: 'pending' | 'active';
   members: SharedDiaryMember[];
@@ -164,15 +164,43 @@ export async function updateSharedDiaryMilestone(
   });
 }
 
+/** Look up any registered user by email to invite them to a shared diary */
+export async function lookupUserForSharing(email: string): Promise<{
+  found: boolean;
+  id?: string;
+  email?: string;
+  public_key?: string;
+  error?: string;
+}> {
+  return rpc('lookup_user_for_sharing', { p_email: email.trim().toLowerCase() });
+}
+
+/** Invite someone to a shared diary directly by their email address */
+export async function inviteMemberDirectly(
+  diaryId: string,
+  email: string,
+  contentKey: Uint8Array,
+  role: 'editor' | 'viewer' = 'editor'
+): Promise<{ email: string; id: string }> {
+  const result = await lookupUserForSharing(email);
+  if (!result.found || !result.id || !result.public_key) {
+    throw new Error(result.error || `No active Velmory account found for "${email}". Ask them to create an account at Velmory first.`);
+  }
+  await inviteSharedMember(diaryId, result.id, result.public_key, contentKey, role);
+  return { email: result.email ?? email, id: result.id };
+}
+
 /** Invite a contact to a shared diary */
 export async function inviteSharedMember(
   diaryId: string,
   userId: string,
   recipientPublicKey: string,
-  contentKey: Uint8Array
+  contentKey: Uint8Array,
+  role:'editor'|'viewer'='editor'
 ): Promise<void> {
   const wrappedKey = await wrapKeyForRecipient(contentKey, recipientPublicKey);
-  await rpc('invite_shared_member', {
+  await rpc('invite_shared_member_with_role', {
+    p_role:role,
     p_diary_id: diaryId,
     p_user_id: userId,
     p_wrapped_key: wrappedKey,
@@ -271,4 +299,17 @@ export async function fetchSharedPages(
   }
 
   return {pages, entries, deletedIds, cursor: result.cursor, hasMore: result.has_more};
+}
+
+export async function setSharedMemberRole(diaryId:string,userId:string,role:'editor'|'viewer') {
+ await rpc('set_shared_member_role',{p_diary_id:diaryId,p_user_id:userId,p_role:role});
+}
+export async function shareExistingDiary(diary:import('./types').Diary,vaultKey:Uint8Array) {
+ if(diary.pages.some(p=>p.seal||p.objects.some(o=>o.audio)))throw new Error('Unlock and unseal protected pages and remove private audio attachments from a copy before sharing. Those private media references cannot yet be transferred safely; your original diary has not been changed.');
+ const created=await createSharedDiary(diary.title,diary.cover,vaultKey);
+ try {
+  for(const page of diary.pages)await saveSharedPage(created.diaryId,page,0,created.contentKey);
+  return created.diaryId;
+ }catch(error){await deleteSharedDiary(created.diaryId);throw error}
+ finally{created.contentKey.fill(0)}
 }

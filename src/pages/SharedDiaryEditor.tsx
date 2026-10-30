@@ -1,3 +1,4 @@
+import BookPagePreview from '../components/BookPagePreview';
 import {useEffect, useState, useCallback, useRef} from 'react';
 import {useParams, useNavigate} from 'react-router-dom';
 import {ArrowLeft, RefreshCw, Users, X, Printer, LockKeyhole, Sparkles, Heart} from 'lucide-react';
@@ -51,7 +52,8 @@ function formatMilestone(dateStr: string, label?: string | null): string {
 }
 
 export default function SharedDiaryEditor() {
-  const {diaryId} = useParams<{diaryId: string}>();
+  const {diaryId:routeId} = useParams<{diaryId: string}>();
+ const diaryId=routeId??location.pathname.split('/')[3];
   const {account, key} = useSession();
   const navigate = useNavigate();
 
@@ -65,6 +67,7 @@ export default function SharedDiaryEditor() {
   const [syncing, setSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState('Loading…');
   const [showMembers, setShowMembers] = useState(false);
+ const [readIndex,setReadIndex]=useState(0);
   const [onlineMembers, setOnlineMembers] = useState<OnlineUser[]>([]);
 
   // Time capsule modal
@@ -108,6 +111,9 @@ export default function SharedDiaryEditor() {
       setSyncing(true);
       setSyncStatus('Syncing…');
       try {
+        const membership=(await listSharedDiaries()).find(d=>d.id===r.id&&d.status==='active');
+        if(!membership){setPages([]);setSharedKey(null);setError('Your access to this diary has been removed.');setLoaded(true);return}
+        setRecord(membership);
         let cursor = syncCursor.current;
         let hasMore = true;
         const nextPages = new Map(pagesRef.current.map(p => [p.id, p]));
@@ -144,7 +150,7 @@ export default function SharedDiaryEditor() {
           setLoaded(true);
         }
       } catch {
-        if (mounted.current) setSyncStatus('Sync failed');
+        if (mounted.current){setSyncStatus('Sync failed');setLoaded(true);setError('Unable to synchronize this shared diary. Reopen it to retry.');}
       } finally {
         if (mounted.current) setSyncing(false);
       }
@@ -163,48 +169,7 @@ export default function SharedDiaryEditor() {
     };
   }, [key, diaryId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Setup Supabase Realtime channel for presence and instant updates
-  useEffect(() => {
-    if (!backend || !diaryId || !account || account.local) return;
-
-    const channel = backend.channel(`shared-diary:${diaryId}`, {
-      config: {presence: {key: account.id}},
-    });
-
-    channel
-      .on('presence', {event: 'sync'}, () => {
-        const state = channel.presenceState();
-        const users: OnlineUser[] = [];
-        for (const presences of Object.values(state)) {
-          for (const p of presences as any[]) {
-            if (p.userId && p.userId !== account.id) {
-              users.push(p);
-            }
-          }
-        }
-        if (mounted.current) setOnlineMembers(users);
-      })
-      .on('broadcast', {event: 'page-updated'}, () => {
-        // Collaborator modified a page -> instantly sync!
-        void sync();
-      })
-      .subscribe(async (status: string) => {
-        if (status === 'SUBSCRIBED') {
-          await channel.track({
-            userId: account.id,
-            email: account.email,
-            onlineAt: new Date().toISOString(),
-          });
-        }
-      });
-
-    channelRef.current = channel;
-
-    return () => {
-      void channel.unsubscribe();
-    };
-  }, [diaryId, account, sync]);
-
+  // Poll through authorized RPCs; do not broadcast membership on public channels.
   // Polling fallback every 30s
   useEffect(() => {
     if (!loaded) return;
@@ -214,10 +179,12 @@ export default function SharedDiaryEditor() {
 
   const handleChange = async (updated: Diary) => {
     if (!sharedKey || !record) return;
+    if(record.my_role==='viewer')throw new Error('This diary is read-only.');
     const newRevisions = new Map(pageRevisions);
 
     for (const page of updated.pages) {
       const rev = pageRevisions.get(page.id) ?? 0;
+      if(JSON.stringify(pagesRef.current.find(p=>p.id===page.id))===JSON.stringify(page))continue;
       try {
         // Stamp author if not set
         if (!page.authorName && account?.email) {
@@ -239,6 +206,7 @@ export default function SharedDiaryEditor() {
         } else {
           setError('Save failed: ' + (e as Error).message);
         }
+        throw e;
       }
     }
 
@@ -252,8 +220,9 @@ export default function SharedDiaryEditor() {
             event: 'page-updated',
             payload: {pageId, deleted: true},
           });
-        } catch {
-          // ignore delete errors
+        } catch(e) {
+          setError('Page deletion failed. Please retry.');
+          throw e;
         }
         newRevisions.delete(pageId);
       }
@@ -487,7 +456,7 @@ export default function SharedDiaryEditor() {
 
       {/* Editor Body */}
       <div style={{flex: 1, overflow: 'hidden'}}>
-        <Editor diary={diary} onChange={handleChange} />
+        {record.my_role==='viewer'?<div className="shared-reading"><p>You have view-only access.</p><div style={{width:325,height:455,position:"relative",margin:"auto"}}><BookPagePreview page={pages[Math.min(readIndex,Math.max(0,pages.length-1))]} number={readIndex+1} title={record.title} scale={.65} side="left"/></div><nav aria-label="Reading pages"><button className="button glass" disabled={readIndex===0} onClick={()=>setReadIndex(i=>i-1)}>Previous</button><span>Page {readIndex+1} of {pages.length}</span><button className="button glass" disabled={readIndex>=pages.length-1} onClick={()=>setReadIndex(i=>i+1)}>Next</button></nav></div>:<Editor diary={diary} onChange={handleChange} />}
       </div>
 
       {/* Time Capsule Modal */}
