@@ -146,19 +146,19 @@
 .time-machine-console .collection-pager{grid-column:1/-1;grid-row:5;padding:0}
 .scene-time-machine:before{background:linear-gradient(90deg,#211b11c9,#100e0bca),url('/assets/time.webp') center/cover}
 .scene-diary:before{background:linear-gradient(#1d160dd9,#120f0adc),url('/assets/room.webp') center/cover}
-.editor-main{overflow:hidden;padding:14px 20px 16px}
-.diary-editor{height:100%;display:flex;flex-direction:column;gap:16px;min-height:0}
-.editor-top{flex-shrink:0;background:#111913b3;border:1px solid #b393533b;border-radius:12px;padding:12px 18px;box-shadow:0 4px 12px #0003;min-height:60px}
-.editor-top>div:first-child{gap:20px}
-.editor-top h2{font:1.6rem var(--serif);margin:0}
-.editor-top-actions{opacity:1;gap:7px}
-.editor-top-actions .icon-button{background:#b7944d0c;border:1px solid #ba9a553b;border-radius:50%;width:34px;height:34px}
-.editor-layout{flex:1;min-height:0;display:grid;grid-template-columns:64px minmax(0,1fr) 190px;gap:20px}
-.editor-toolbar{min-height:0;overflow-y:auto;align-self:stretch;border:1px solid #b99a4b3d;background:#121b15c9;padding:6px;border-radius:12px;scrollbar-width:thin}
-.editor-toolbar>button{padding:9px 3px;min-height:49px;color:#ccb482}
+.editor-main{overflow:hidden;padding:6px 12px 8px}
+.diary-editor{height:100%;display:flex;flex-direction:column;gap:6px;min-height:0}
+.editor-top{flex-shrink:0;background:#111913b3;border:1px solid #b393533b;border-radius:8px;padding:4px 14px;box-shadow:0 4px 12px #0003;min-height:38px}
+.editor-top>div:first-child{gap:12px;align-items:center}
+.editor-top h2{font:1.35rem var(--serif);margin:0;line-height:1.2}
+.editor-top-actions{opacity:1;gap:6px;align-items:center}
+.editor-top-actions .icon-button{background:#b7944d0c;border:1px solid #ba9a553b;border-radius:50%;width:30px;height:30px}
+.editor-layout{flex:1;min-height:0;display:grid;grid-template-columns:54px minmax(0,1fr) 180px;gap:6px}
+.editor-toolbar{min-height:0;overflow-y:auto;align-self:stretch;border:1px solid #b99a4b3d;background:#121b15c9;padding:4px;border-radius:10px;scrollbar-width:thin}
+.editor-toolbar>button{padding:7px 2px;min-height:44px;color:#ccb482}
 .editor-toolbar svg{width:18px;height:18px}
 .editor-toolbar span{font-size:.48rem}
-.editor-stage{min-height:0;height:100%;padding:32px 28px;border:0;background:radial-gradient(ellipse at center,#aa804725,transparent 65%);box-shadow:none;border-radius:0;display:flex;align-items:center;justify-content:center;overflow:auto;scrollbar-width:thin;overscroll-behavior:contain}
+.editor-stage{min-height:0;height:100%;padding:4px 6px;border:0;background:radial-gradient(ellipse at center,#aa804725,transparent 65%);box-shadow:none;border-radius:0;display:flex;align-items:center;justify-content:center;overflow:auto;scrollbar-width:thin;overscroll-behavior:contain}
 .book-spread{flex-shrink:0;display:flex;align-items:flex-start;justify-content:center;gap:0;position:relative;animation:book-turn .5s cubic-bezier(.18,.8,.2,1) both;filter:drop-shadow(8px 15px 12px #0007)}
 .book-spread:before{content:'';position:absolute;inset:-9px -13px -13px -13px;background:linear-gradient(100deg,#382414,#69472b,#33200f);border:1px solid #ab7f3c;border-radius:12px 20px 20px 12px;box-shadow:inset 0 0 0 4px #271a12,inset 0 0 0 5px #b185453b;z-index:-1}
 .book-spread:after{content:'';position:absolute;bottom:-30px;left:49%;width:12px;height:35px;background:linear-gradient(90deg,#6e2e20,#ad5740,#743221);clip-path:polygon(0 0,100% 0,100% 100%,50% 86%,0 100%)}
@@ -181,7 +181,7 @@
 .object-properties .select-trigger{min-height:34px;padding:8px;font-size:.62rem}
 .page-details{margin-top:18px}
 .page-details summary{font-size:.65rem;color:#dcc18b}
-.editor-footer{flex-shrink:0;background:#111913b3;border:1px solid #b393533b;border-radius:12px;padding:10px 18px;min-height:48px;gap:15px}
+.editor-footer{flex-shrink:0;background:#111913b3;border:1px solid #b393533b;border-radius:8px;padding:3px 14px;min-height:34px;gap:10px}
 .editor-footer>div>span{font-size:.62rem}
 .editor-footer>span{font-size:.6rem}
 .editor-footer .icon-button{border:1px solid #b9974944;border-radius:50%}
@@ -277,8 +277,8 @@
 .time-machine .time-machine-console{grid-template-columns:290px minmax(0,1fr);gap:20px;padding:10px 0}
 .year-dial>div{width:240px;height:240px}
 .time-machine .travel-preview,.time-machine .travel-empty{padding:25px}
-.editor-layout{grid-template-columns:56px minmax(0,1fr) 165px;gap:15px}
-.editor-stage{padding:30px 22px}
+.editor-layout{grid-template-columns:52px minmax(0,1fr) 165px;gap:6px}
+.editor-stage{padding:4px 6px}
 .letter-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:850px){.workspace .sidebar{width:235px}
 .workspace-body{margin-left:0;width:100%}
@@ -289,8 +289,8 @@
 .library-shelf .diary-cover{height:250px}
 .library-shelf .cover-title{font-size:1.3rem}
 .library-shelf .book-collection{gap:20px}
-.editor-layout{grid-template-columns:52px minmax(0,1fr) 155px;gap:13px}
-.editor-main{padding:12px}
+.editor-layout{grid-template-columns:50px minmax(0,1fr) 155px;gap:6px}
+.editor-main{padding:6px 8px}
 .sticker-panel{left:80px;right:180px}
 .calendar{grid-template-columns:170px minmax(0,1fr)}
 .calendar .group-memories{grid-template-columns:1fr}
@@ -364,19 +364,19 @@
 .time-machine .travel-preview,.time-machine .travel-empty{grid-column:1;grid-row:4;min-height:220px;padding:25px;transform:none}
 .time-machine .travel-preview h2{font-size:2rem}
 .time-machine .collection-pager{grid-column:1;grid-row:5}
-.editor-main{padding:12px 8px 16px;overflow:auto}
-.diary-editor{height:auto;min-height:100%;gap:13px}
-.editor-top{padding:11px 12px;min-height:57px}
-.editor-top>div:first-child{gap:8px}
-.editor-top h2{font-size:1.25rem;max-width:125px}
+.editor-main{padding:6px 6px 12px;overflow:auto}
+.diary-editor{height:auto;min-height:100%;gap:8px}
+.editor-top{padding:6px 10px;min-height:38px}
+.editor-top>div:first-child{gap:6px}
+.editor-top h2{font-size:1.15rem;max-width:140px}
 .editor-top a{font-size:.55rem}
-.editor-top-actions{gap:4px}
-.editor-top-actions .icon-button{width:28px;height:28px;min-width:28px;padding:5px}
+.editor-top-actions{gap:3px}
+.editor-top-actions .icon-button{width:28px;height:28px;min-width:28px;padding:4px}
 .editor-top-actions svg{width:14px;height:14px}
-.editor-layout{display:flex;flex-direction:column;gap:20px;flex:none;min-height:0}
-.editor-toolbar{order:0;min-height:60px;padding:5px;position:relative;overflow-x:auto;overflow-y:hidden;flex-direction:row;display:flex;width:100%;border-radius:10px}
-.editor-toolbar>button{flex:0 0 51px;min-height:45px;padding:5px;min-width:51px}
-.editor-stage{order:1;height:490px;min-height:490px;padding:25px;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse,#9d794324,transparent)}
+.editor-layout{display:flex;flex-direction:column;gap:10px;flex:none;min-height:0}
+.editor-toolbar{order:0;min-height:50px;padding:4px;position:relative;overflow-x:auto;overflow-y:hidden;flex-direction:row;display:flex;width:100%;border-radius:8px}
+.editor-toolbar>button{flex:0 0 46px;min-height:40px;padding:4px;min-width:46px}
+.editor-stage{order:1;height:auto;min-height:440px;padding:6px 4px;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse,#9d794324,transparent)}
 .page-inspector{order:2;height:auto;max-height:300px;overflow:auto;display:block;width:100%;padding:14px}
 .page-thumbnails{display:flex;max-height:none;overflow-x:auto;padding:4px 2px 8px}
 .page-thumbnails>button{flex:0 0 125px;min-width:0;min-height:60px}
@@ -560,7 +560,7 @@
 .motion-paused .turning-sheet{display:none}
 @media(prefers-reduced-motion:reduce){.turning-sheet{display:none}}
 @media(max-width:1150px) and (min-width:700px){.book-viewing .editor-layout{grid-template-columns:minmax(0,1fr) 165px}}
-@media(max-width:699px){.book-viewing .editor-layout{display:flex}.book-viewing .editor-stage{height:490px;min-height:490px}.editor-top-actions{gap:2px}.editor-top-actions .icon-button{min-width:25px;width:25px}.editor-top h2{max-width:100px}.spread-label{display:none}}
+@media(max-width:699px){.book-viewing .editor-layout{display:flex}.book-viewing .editor-stage{height:auto;min-height:440px;padding:6px 4px}.editor-top-actions{gap:2px}.editor-top-actions .icon-button{min-width:25px;width:25px}.editor-top h2{max-width:140px}.spread-label{display:none}}
 
 .book-spread>.facing-viewport{display:block}
 .active-left .date-field,.active-left .page-object{pointer-events:auto}

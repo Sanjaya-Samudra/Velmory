@@ -280,109 +280,87 @@ export default function SharedDiaryEditor() {
 
   const diary = buildDiary(record, pages);
 
-  return (
-    <div style={{display: 'flex', flexDirection: 'column', height: '100%'}}>
-      {/* Collaboration Top Bar */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          padding: '0.65rem 1.25rem',
-          borderBottom: '1px solid var(--border,rgba(255,255,255,0.08))',
-          background: 'rgba(0,0,0,0.15)',
-          flexWrap: 'wrap',
-        }}
-      >
-        <button
-          className="icon-button"
-          onClick={() => navigate('/app/shared-diaries')}
-          aria-label="Back"
-        >
-          <ArrowLeft size={18} />
-        </button>
-        <span style={{fontWeight: 600, fontSize: '0.95rem'}}>{record.title}</span>
+  const titleExtras = record.milestone_date ? (
+    <span
+      style={{
+        fontSize: '0.78rem',
+        color: 'var(--gold,#d4af37)',
+        padding: '2px 8px',
+        borderRadius: '12px',
+        background: 'rgba(212,175,55,0.1)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '4px',
+        marginLeft: '6px',
+      }}
+    >
+      <Heart size={12} /> {formatMilestone(record.milestone_date, record.milestone_label)}
+    </span>
+  ) : null;
 
-        {/* Milestone Indicator */}
-        {record.milestone_date && (
+  const topBarExtras = (
+    <>
+      {onlineMembers.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '0.78rem',
+            color: '#4ade80',
+            marginRight: '4px',
+          }}
+          title={onlineMembers.map(u => u.email).join(', ')}
+        >
           <span
             style={{
-              fontSize: '0.78rem',
-              color: 'var(--gold,#d4af37)',
-              padding: '2px 8px',
-              borderRadius: '12px',
-              background: 'rgba(212,175,55,0.1)',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: '#4ade80',
+              boxShadow: '0 0 8px #4ade80',
             }}
-          >
-            <Heart size={12} /> {formatMilestone(record.milestone_date, record.milestone_label)}
-          </span>
-        )}
+          />
+          <span>{onlineMembers[0].email.split('@')[0]} is co-writing</span>
+        </div>
+      )}
 
-        <div style={{flex: 1}} />
+      <span className="sync-status" style={{fontSize: '0.75rem', opacity: 0.7, marginRight: '4px'}}>
+        {syncStatus}
+      </span>
 
-        {/* Live presence indicator */}
-        {onlineMembers.length > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '0.78rem',
-              color: '#4ade80',
-            }}
-            title={onlineMembers.map(u => u.email).join(', ')}
-          >
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: '50%',
-                background: '#4ade80',
-                boxShadow: '0 0 8px #4ade80',
-              }}
-            />
-            <span>{onlineMembers[0].email.split('@')[0]} is co-writing</span>
-          </div>
-        )}
+      <button
+        className="icon-button"
+        onClick={handleExportPrint}
+        aria-label="Export keepsake book"
+        title="Print or export keepsake book"
+      >
+        <Printer size={16} />
+      </button>
 
-        <span className="sync-status" style={{fontSize: '0.75rem', opacity: 0.7}}>
-          {syncStatus}
-        </span>
+      <button
+        className="icon-button"
+        onClick={() => void sync()}
+        aria-label="Sync"
+        disabled={syncing}
+      >
+        <RefreshCw size={16} />
+      </button>
 
-        {/* Print / Keepsake Export */}
-        <button
-          className="icon-button"
-          onClick={handleExportPrint}
-          aria-label="Export keepsake book"
-          title="Print or export keepsake book"
-        >
-          <Printer size={16} />
-        </button>
+      <button
+        className="icon-button"
+        onClick={() => setShowMembers(m => !m)}
+        aria-label="Members"
+        title="Diary members"
+        aria-pressed={showMembers}
+      >
+        <Users size={16} />
+      </button>
+    </>
+  );
 
-        {/* Sync button */}
-        <button
-          className="icon-button"
-          onClick={() => void sync()}
-          aria-label="Sync"
-          disabled={syncing}
-        >
-          <RefreshCw size={16} />
-        </button>
-
-        {/* Members toggle */}
-        <button
-          className="icon-button"
-          onClick={() => setShowMembers(m => !m)}
-          aria-label="Members"
-          title="Diary members"
-        >
-          <Users size={16} />
-        </button>
-      </div>
-
+  const banner = (
+    <>
       {error && (
         <Message error>
           {error}
@@ -391,20 +369,21 @@ export default function SharedDiaryEditor() {
           </button>
         </Message>
       )}
-
-      {/* Members panel */}
       {showMembers && (
         <div
           style={{
-            padding: '1rem 1.25rem',
+            padding: '0.75rem 1rem',
             borderBottom: '1px solid var(--border,rgba(255,255,255,0.08))',
-            background: 'rgba(255,255,255,0.02)',
+            background: 'rgba(0,0,0,0.3)',
+            borderRadius: '8px',
+            marginBottom: '4px',
           }}
         >
-          <p className="eyebrow" style={{marginBottom: '0.5rem'}}>
-            CO-AUTHORS & MEMBERS ({record.members.filter(m => m.status === 'active').length})
+          <p className="eyebrow" style={{marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+            <span>CO-AUTHORS & MEMBERS ({record.members.filter(m => m.status === 'active').length})</span>
+            <button className="text-link" style={{fontSize: '0.65rem'}} onClick={() => setShowMembers(false)}>Close</button>
           </p>
-          <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
+          <div style={{display: 'flex', gap: '0.75rem', flexWrap: 'wrap'}}>
             {record.members
               .filter(m => m.status === 'active')
               .map(m => {
@@ -453,33 +432,41 @@ export default function SharedDiaryEditor() {
           </div>
         </div>
       )}
+    </>
+  );
 
-      {/* Editor Body */}
-      <div style={{flex: 1, overflow: 'hidden'}}>
-        {record.my_role==='viewer'?(
-          <div className="shared-reading" style={{padding:'20px',textAlign:'center'}}>
-            <p style={{marginBottom:'1rem',color:'#d2bd91',fontSize:'0.85rem'}}>You have view-only access to this keepsake diary.</p>
-            <div style={{display:'flex',justifyContent:'center',alignItems:'center',margin:'auto'}}>
-              <div style={{width:500*Math.min(1.2,Math.max(0.65,innerWidth<700?(innerWidth-32)/500:0.95)),height:700*Math.min(1.2,Math.max(0.65,innerWidth<700?(innerWidth-32)/500:0.95)),position:'relative'}}>
-                <BookPagePreview
-                  page={pages[Math.min(readIndex,Math.max(0,pages.length-1))]}
-                  number={readIndex+1}
-                  title={record.title}
-                  scale={Math.min(1.2,Math.max(0.65,innerWidth<700?(innerWidth-32)/500:0.95))}
-                  side="left"
-                />
-              </div>
+  return (
+    <div style={{height: '100%', display: 'flex', flexDirection: 'column'}}>
+      {record.my_role === 'viewer' ? (
+        <div className="shared-reading" style={{padding: '20px', textAlign: 'center'}}>
+          <p style={{marginBottom: '1rem', color: '#d2bd91', fontSize: '0.85rem'}}>You have view-only access to this keepsake diary.</p>
+          <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', margin: 'auto'}}>
+            <div style={{width: 500 * Math.min(1.2, Math.max(0.65, innerWidth < 700 ? (innerWidth - 32) / 500 : 0.95)), height: 700 * Math.min(1.2, Math.max(0.65, innerWidth < 700 ? (innerWidth - 32) / 500 : 0.95)), position: 'relative'}}>
+              <BookPagePreview
+                page={pages[Math.min(readIndex, Math.max(0, pages.length - 1))]}
+                number={readIndex + 1}
+                title={record.title}
+                scale={Math.min(1.2, Math.max(0.65, innerWidth < 700 ? (innerWidth - 32) / 500 : 0.95))}
+                side="left"
+              />
             </div>
-            <nav aria-label="Reading pages" style={{display:'flex',justifyContent:'center',alignItems:'center',gap:'1rem',marginTop:'1.5rem'}}>
-              <button className="button glass" disabled={readIndex===0} onClick={()=>setReadIndex(i=>i-1)}>Previous</button>
-              <span style={{fontSize:'0.85rem',color:'#eed8ae'}}>Page {readIndex+1} of {pages.length}</span>
-              <button className="button glass" disabled={readIndex>=pages.length-1} onClick={()=>setReadIndex(i=>i+1)}>Next</button>
-            </nav>
           </div>
-        ):(
-          <Editor diary={diary} onChange={handleChange} />
-        )}
-      </div>
+          <nav aria-label="Reading pages" style={{display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '1.5rem'}}>
+            <button className="button glass" disabled={readIndex === 0} onClick={() => setReadIndex(i => i - 1)}>Previous</button>
+            <span style={{fontSize: '0.85rem', color: '#eed8ae'}}>Page {readIndex + 1} of {pages.length}</span>
+            <button className="button glass" disabled={readIndex >= pages.length - 1} onClick={() => setReadIndex(i => i + 1)}>Next</button>
+          </nav>
+        </div>
+      ) : (
+        <Editor
+          diary={diary}
+          onChange={handleChange}
+          backTo={{label: 'Shared diaries', path: '/app/shared-diaries'}}
+          topBarExtras={topBarExtras}
+          titleExtras={titleExtras}
+          banner={banner}
+        />
+      )}
 
       {/* Time Capsule Modal */}
       {capsulePage && (
