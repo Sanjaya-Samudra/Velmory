@@ -456,7 +456,29 @@ export default function SharedDiaryEditor() {
 
       {/* Editor Body */}
       <div style={{flex: 1, overflow: 'hidden'}}>
-        {record.my_role==='viewer'?<div className="shared-reading"><p>You have view-only access.</p><div style={{width:325,height:455,position:"relative",margin:"auto"}}><BookPagePreview page={pages[Math.min(readIndex,Math.max(0,pages.length-1))]} number={readIndex+1} title={record.title} scale={.65} side="left"/></div><nav aria-label="Reading pages"><button className="button glass" disabled={readIndex===0} onClick={()=>setReadIndex(i=>i-1)}>Previous</button><span>Page {readIndex+1} of {pages.length}</span><button className="button glass" disabled={readIndex>=pages.length-1} onClick={()=>setReadIndex(i=>i+1)}>Next</button></nav></div>:<Editor diary={diary} onChange={handleChange} />}
+        {record.my_role==='viewer'?(
+          <div className="shared-reading" style={{padding:'20px',textAlign:'center'}}>
+            <p style={{marginBottom:'1rem',color:'#d2bd91',fontSize:'0.85rem'}}>You have view-only access to this keepsake diary.</p>
+            <div style={{display:'flex',justifyContent:'center',alignItems:'center',margin:'auto'}}>
+              <div style={{width:500*Math.min(1.2,Math.max(0.65,innerWidth<700?(innerWidth-32)/500:0.95)),height:700*Math.min(1.2,Math.max(0.65,innerWidth<700?(innerWidth-32)/500:0.95)),position:'relative'}}>
+                <BookPagePreview
+                  page={pages[Math.min(readIndex,Math.max(0,pages.length-1))]}
+                  number={readIndex+1}
+                  title={record.title}
+                  scale={Math.min(1.2,Math.max(0.65,innerWidth<700?(innerWidth-32)/500:0.95))}
+                  side="left"
+                />
+              </div>
+            </div>
+            <nav aria-label="Reading pages" style={{display:'flex',justifyContent:'center',alignItems:'center',gap:'1rem',marginTop:'1.5rem'}}>
+              <button className="button glass" disabled={readIndex===0} onClick={()=>setReadIndex(i=>i-1)}>Previous</button>
+              <span style={{fontSize:'0.85rem',color:'#eed8ae'}}>Page {readIndex+1} of {pages.length}</span>
+              <button className="button glass" disabled={readIndex>=pages.length-1} onClick={()=>setReadIndex(i=>i+1)}>Next</button>
+            </nav>
+          </div>
+        ):(
+          <Editor diary={diary} onChange={handleChange} />
+        )}
       </div>
 
       {/* Time Capsule Modal */}
