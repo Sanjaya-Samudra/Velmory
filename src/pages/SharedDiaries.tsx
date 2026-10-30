@@ -247,6 +247,16 @@ export default function SharedDiaries({
     setConfirmDelete(null);
     void act(async () => {
       await deleteSharedDiary(d.id);
+      const linked = availablePrivateDiaries.find(p => p.sharedDiaryId === d.id);
+      if (linked) {
+        const cleaned = { ...linked, sharedDiaryId: undefined };
+        if (onUpdatePrivateDiary) {
+          await onUpdatePrivateDiary(cleaned);
+        } else if (account && key) {
+          await saveDiary(account.id, key, cleaned);
+        }
+        setAvailablePrivateDiaries(prev => prev.map(p => p.id === cleaned.id ? cleaned : p));
+      }
       setNotice('Shared diary deleted.');
     });
   };
@@ -358,10 +368,6 @@ export default function SharedDiaries({
             <button className="dialog-close icon-button" aria-label="Close" onClick={() => setCreating(false)}><X /></button>
             <p className="eyebrow">A NEW SHARED CHAPTER</p>
             <h2 id="create-shared-title">Start writing together.</h2>
-            <div style={{display:'flex',gap:'8px',marginBottom:'1.25rem'}}>
-              <button type="button" className="button gold small" style={{flex:1}}>Start fresh</button>
-              <button type="button" className="button glass small" style={{flex:1}} onClick={()=>{setCreating(false);setSharingExisting(true);}}><BookOpen size={14}/> From existing diary</button>
-            </div>
             <form onSubmit={handleCreate}>
               <label>Diary name
                 <input autoFocus required maxLength={65} value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Our story, 2026" />
@@ -401,12 +407,8 @@ export default function SharedDiaries({
             <button className="dialog-close icon-button" aria-label="Close" onClick={() => setSharingExisting(false)}><X /></button>
             <p className="eyebrow">BRING A STORY TOGETHER</p>
             <h2 id="share-existing-title">Share an existing diary.</h2>
-            <div style={{display:'flex',gap:'8px',marginBottom:'1.25rem'}}>
-              <button type="button" className="button glass small" style={{flex:1}} onClick={()=>{setSharingExisting(false);setCreating(true);}}>Start fresh</button>
-              <button type="button" className="button gold small" style={{flex:1}}><BookOpen size={14}/> From existing diary</button>
-            </div>
-            <p style={{fontSize:'0.82rem',color:'#c7c7b9',marginBottom:'1rem'}}>
-              Choose a diary from your library. A shared edition will be created with its current pages. Your private original remains safely preserved as a snapshot.
+            <p style={{fontSize:'0.82rem',color:'#c7c7b9',marginBottom:'1.2rem',lineHeight:'1.6'}}>
+              Choose a diary from your library to create a shared edition. Your private original remains safely preserved as a snapshot.
             </p>
 
             <form onSubmit={handleShareExisting}>
@@ -420,59 +422,39 @@ export default function SharedDiaries({
                 </div>
               ) : (
                 <>
-                  <label style={{marginBottom:'6px'}}>Select diary to share</label>
-                  <div className="existing-diaries-picker" style={{display:'grid',gap:'8px',maxHeight:'230px',overflowY:'auto',paddingRight:'4px',margin:'6px 0 16px'}}>
+                  <label style={{marginBottom:'8px'}}>Select diary to share</label>
+                  <div className="share-diary-picker">
                     {availablePrivateDiaries.filter(d => !d.archived).map(d => {
                       const isSelected = selectedDiaryId === d.id;
-                      const isAlreadyShared = Boolean(d.sharedDiaryId);
+                      const isCurrentlyShared = Boolean(d.sharedDiaryId && diaries.some(s => s.id === d.sharedDiaryId));
                       const hasIncompatibleMedia = d.pages.some(p => p.seal || p.objects.some(o => o.audio));
 
                       return (
                         <div
                           key={d.id}
-                          onClick={() => {
-                            if (!isAlreadyShared) setSelectedDiaryId(d.id);
-                          }}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            padding: '10px 14px',
-                            borderRadius: '8px',
-                            border: isSelected ? '1.5px solid var(--gold,#d4af37)' : '1px solid rgba(212,175,55,0.2)',
-                            background: isSelected ? 'rgba(212,175,55,0.12)' : isAlreadyShared ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.03)',
-                            cursor: isAlreadyShared ? 'not-allowed' : 'pointer',
-                            opacity: isAlreadyShared ? 0.6 : 1,
-                            transition: 'all 0.2s',
-                          }}
+                          className={`share-diary-card ${isSelected ? 'selected' : ''}`}
+                          onClick={() => setSelectedDiaryId(d.id)}
+                          role="radio"
+                          aria-checked={isSelected}
+                          tabIndex={0}
+                          onKeyDown={e => {if (e.key === ' ' || e.key === 'Enter') setSelectedDiaryId(d.id);}}
                         >
-                          <div className={`cover-swatch ${d.cover}`} aria-hidden="true" style={{width:32,height:44,borderRadius:3,flexShrink:0}}>
+                          <div className={`share-book-thumb ${d.cover}`} aria-hidden="true">
                             <span>V</span>
                           </div>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                              <strong style={{fontSize:'0.92rem',color:isSelected?'#f6ddb0':'#eed7ac',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
-                                {d.title}
-                              </strong>
-                              {isAlreadyShared && (
-                                <small style={{fontSize:'0.62rem',padding:'1px 6px',borderRadius:'10px',background:'rgba(212,175,55,0.15)',color:'#d4af37'}}>
-                                  Already shared
-                                </small>
+                          <div className="share-diary-info">
+                            <div className="share-diary-title-row">
+                              <span className="share-diary-title">{d.title}</span>
+                              {isCurrentlyShared && (
+                                <span className="share-diary-badge">Currently shared</span>
                               )}
                             </div>
-                            <small style={{fontSize:'0.72rem',color:'#9ea693'}}>
+                            <span className="share-diary-meta">
                               {d.pages.length} {d.pages.length === 1 ? 'page' : 'pages'}
-                              {hasIncompatibleMedia ? ' · ⚠️ Has sealed pages or audio' : ''}
-                            </small>
+                              {hasIncompatibleMedia ? ' · ⚠️ Contains sealed pages or audio' : ''}
+                            </span>
                           </div>
-                          <div style={{
-                            width: 18,
-                            height: 18,
-                            borderRadius: '50%',
-                            border: isSelected ? '5px solid #d4af37' : '1.5px solid rgba(212,175,55,0.4)',
-                            background: isSelected ? '#fff' : 'transparent',
-                            flexShrink: 0,
-                          }} />
+                          <div className="share-diary-radio" aria-hidden="true" />
                         </div>
                       );
                     })}
@@ -513,7 +495,6 @@ export default function SharedDiaries({
                       disabled={
                         busy ||
                         !selectedDiaryId ||
-                        Boolean(availablePrivateDiaries.find(d => d.id === selectedDiaryId)?.sharedDiaryId) ||
                         Boolean(availablePrivateDiaries.find(d => d.id === selectedDiaryId)?.pages.some(p => p.seal || p.objects.some(o => o.audio)))
                       }
                     >
