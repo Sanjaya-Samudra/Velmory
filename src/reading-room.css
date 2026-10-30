@@ -574,3 +574,27 @@
 .admin-health .admin-limits{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-top:22px;align-items:end}.admin-health .admin-limits button{min-height:44px}
 
 .published-cover-collections{display:grid;gap:16px;margin:12px 0}.published-cover-options{display:flex;flex-wrap:wrap;gap:10px}.published-cover-options button{position:relative;width:82px;height:108px;padding:0;border:1px solid #ad915e;background:#18221f;color:#f0dfb5;overflow:hidden}.published-cover-options button.selected{outline:2px solid #e3b760;outline-offset:2px}.published-cover-options img{width:100%;height:100%;object-fit:cover;filter:brightness(.7)}.published-cover-options span{position:absolute;inset:auto 4px 5px;font-size:.68rem;text-shadow:0 1px 3px #000}.diary-cover .cover-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:brightness(.44) sepia(.25);pointer-events:none}.diary-cover:has(.cover-art)>span{position:relative;z-index:1}
+
+/* Letter attachment dropzone & keepsake chips */
+.letter-attachment-section{margin-top:14px;margin-bottom:18px}
+.letter-attachment-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.letter-attachment-header .control-label{font-size:.77rem;color:#c7c7b9;margin:0}
+.attachment-count{font-size:.7rem;color:#d4af37;font-variant-numeric:tabular-nums}
+.attachment-dropzone{display:flex;align-items:center;gap:14px;padding:14px 18px;background:linear-gradient(135deg,rgba(22,33,26,.7),rgba(16,23,19,.85));border:1.5px dashed rgba(212,175,55,.38);border-radius:8px;cursor:pointer;transition:all .25s ease;position:relative;outline:none}
+.attachment-dropzone:hover,.attachment-dropzone.drag-over{border-color:#e2be78;background:linear-gradient(135deg,rgba(32,48,38,.8),rgba(22,33,26,.95));box-shadow:0 0 15px rgba(212,175,55,.15)}
+.dropzone-icon{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:rgba(212,175,55,.12);border:1px solid rgba(212,175,55,.3);color:#e2be78;flex-shrink:0}
+.dropzone-text{flex:1;min-width:0;text-align:left}
+.dropzone-text strong{display:block;font-family:var(--serif,'Cormorant Garamond',Georgia,serif);font-size:1.05rem;color:#eed7ac;letter-spacing:.02em}
+.dropzone-text small{display:block;font-size:.68rem;color:#b0a996;margin-top:2px}
+.attachment-dropzone .button.glass{flex-shrink:0;pointer-events:none;font-size:.72rem;padding:6px 12px}
+.attachment-files-container{display:flex;flex-direction:column;gap:10px;background:rgba(16,23,19,.6);border:1px solid rgba(212,175,55,.25);border-radius:8px;padding:12px}
+.attachment-chips-grid{display:flex;flex-wrap:wrap;gap:8px;max-height:160px;overflow-y:auto;scrollbar-width:thin}
+.attachment-chip{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;background:linear-gradient(135deg,rgba(34,48,39,.85),rgba(20,30,24,.9));border:1px solid rgba(212,175,55,.35);border-radius:6px;max-width:280px;box-shadow:0 2px 6px rgba(0,0,0,.25);animation:chip-appear .2s ease both}
+@keyframes chip-appear{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.attachment-chip-icon{color:#e2be78;display:flex;align-items:center;flex-shrink:0}
+.attachment-chip-info{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.attachment-chip-name{font-size:.75rem;color:#f0e2ca;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
+.attachment-chip-size{font-size:.62rem;color:#9ea693}
+.attachment-chip-remove{background:transparent;border:0;color:#b09e7c;padding:2px;display:flex;align-items:center;justify-content:center;border-radius:4px;cursor:pointer;margin-left:2px;transition:color .15s,background .15s}
+.attachment-chip-remove:hover{color:#fca5a5;background:rgba(220,38,38,.15)}
+.attachment-add-more{align-self:flex-start;font-size:.72rem;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;margin-top:4px}
